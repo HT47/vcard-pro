@@ -1,0 +1,63 @@
+{
+  "Template1": {
+    "profileAlt": "Claudia Alves",
+    "name": "Claudia Alves",
+    "role": "Business Marketing",
+    "idCard": "Id card",
+    "email": "Email",
+    "phone": "Téléphone",
+    "address": "Adresse"
+  },
+  "Template2": {
+    "profileAlt": "Claudia Alves Coiffeuse",
+    "name": "Claudia Alves",
+    "role": "Coiffeuse Claudia",
+    "idCard": "Id card",
+    "email": "Email",
+    "phone": "Téléphone",
+    "address": "Adresse"
+  },
+  "Template3": {
+    "bgAlt": "Bureau background",
+    "weekOf": "Semaine du",
+    "title": "Programme",
+    "tasks": {
+      "task1": "Répondre aux emails",
+      "task2": "Finaliser présentation pour Nomade",
+      "task3": "Appel avec Lou Huet",
+      "task4": "Relecture et envoi de la proposition à Léa Vincent",
+      "task5": "Envoi du devis pour Théo Faure",
+      "task6": "Recherche de nouveaux prospects",
+      "task7": "Suivi des tâches pour le lendemain"
+    }
+  },
+  "Template4": {
+    "title": "Programme",
+    "subtitle": "Bar-Restaurant Nomade",
+    "ofTheWeek": "de la semaine",
+    "days": {
+      "thu": "JEU.",
+      "fri": "VEN.",
+      "sat": "SAM.",
+      "sun": "DIM."
+    },
+    "events": {
+      "music": "Festival de musique",
+      "market": "Marché artisanal",
+      "cinema": "Cinéma en Pleine Air",
+      "food": "Fête de la Gastronomie"
+    },
+    "locations": {
+      "anywhere": "ANYWHERE"
+    },
+    "descriptions": {
+      "musicDesc": "Venez vibrer au rythme des meilleurs artistes locaux.",
+      "marketDesc": "Découvrez des créations uniques des artisans locaux.",
+      "cinemaDesc": "Apportez vos couvertures pour une soirée cinéma en plein air !",
+      "foodDesc": "Dégustez des plats préparés par les chefs de la région."
+    }
+  },
+  "TemplatesDemo": {
+    "title": "Démo des Templates"
+  }
+}

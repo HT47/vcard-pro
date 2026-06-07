@@ -1,0 +1,20 @@
+{
+  "editor_title": "VCard Builder Pro",
+  "save_button": "Save",
+  "preview_title": "Preview",
+  "contact_info": "Contact Information",
+  "social_networks": "Social Networks",
+  "templates": "Templates",
+  "call_now": "Call Now",
+  "address": "Address",
+  "website": "Website",
+  "email": "Email",
+  "phone": "Phone",
+  "id_card": "ID Card",
+  "share": "Share",
+  "default_name": "Alexandre Dubois",
+  "default_role": "Creative Director",
+  "default_company": "NextLevel Agency",
+  "default_bio": "Passionate about UI/UX design and creating memorable digital experiences.",
+  "default_location": "London, UK"
+}
