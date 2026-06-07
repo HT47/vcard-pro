@@ -251,6 +251,46 @@ export default function DemoBuilder() {
     }
   };
 
+  const handleDownloadVCF = () => {
+    const vcardContent = `BEGIN:VCARD
+VERSION:3.0
+FN:${formData.name}
+ORG:${formData.company}
+TITLE:${formData.role}
+TEL;TYPE=CELL:${formData.phone}
+EMAIL:${formData.email}
+URL:${formData.website}
+ADR;TYPE=WORK:;;${formData.location}
+NOTE:${formData.bio}
+END:VCARD`;
+
+    const blob = new Blob([vcardContent], { type: "text/vcard;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `${formData.name.replace(/\s+/g, '_')}.vcf`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleShare = () => {
+    const shareUrl = publishedSlug 
+      ? `${window.location.origin}/v/${publishedSlug}`
+      : window.location.href;
+
+    if (navigator.share) {
+      navigator.share({
+        title: formData.name,
+        text: `Découvrez ma carte de visite vCard : ${formData.role} chez ${formData.company}`,
+        url: shareUrl,
+      }).catch(err => console.log(err));
+    } else {
+      navigator.clipboard.writeText(shareUrl);
+      alert("Lien copié dans le presse-papier !");
+    }
+  };
+
   const SOCIAL_PLATFORMS = ["LinkedIn", "Twitter", "Instagram", "Facebook", "Github", "Youtube", "Website", "Autre"];
 
   const getPlatformIcon = (platform: string) => {
@@ -863,6 +903,7 @@ export default function DemoBuilder() {
               <motion.button 
                 whileHover={{ scale: 1.02, y: -2 }}
                 whileTap={{ scale: 0.98 }}
+                onClick={handleDownloadVCF}
                 className="py-3.5 rounded-2xl text-sm font-bold flex justify-center items-center gap-2 text-white shadow-[inset_0_2px_4px_rgba(255,255,255,0.4),0_10px_20px_rgba(0,0,0,0.5)] transition-all relative overflow-hidden group" 
                 style={{ background: formData.theme.gradient }}
               >
@@ -873,6 +914,7 @@ export default function DemoBuilder() {
               <motion.button 
                 whileHover={{ scale: 1.02, y: -2 }}
                 whileTap={{ scale: 0.98 }}
+                onClick={handleShare}
                 className={`py-3.5 border rounded-2xl text-sm font-bold flex justify-center items-center gap-2 transition-all backdrop-blur-xl shadow-[inset_0_2px_4px_rgba(255,255,255,0.1),0_10px_20px_rgba(0,0,0,0.4)] relative overflow-hidden group ${isLight ? 'bg-white/80 border-zinc-200 text-zinc-900' : 'bg-zinc-900/80 border-white/10 text-white'}`}
               >
                 <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent opacity-50 group-hover:opacity-100 transition-opacity"></div>
@@ -881,40 +923,40 @@ export default function DemoBuilder() {
               </motion.button>
             </div>
 
-            {/* Contact Items with 3D Icons */}
-            <div className={`w-full ${formData.layout === 'wave' ? 'grid grid-cols-2 gap-3' : 'space-y-3'}`}>
+            <div className="w-full space-y-3">
               {[
-                { icon: '✉️', label: t("email") || 'Email', value: formData.email, type: 'email' },
-                { icon: '📱', label: t("phone") || 'Téléphone', value: formData.phone, type: 'tel' },
-                { icon: '🌐', label: t("website") || 'Site', value: formData.website?.replace(/^https?:\/\//, ''), type: 'url' },
-                { icon: '📍', label: t("address") || 'Adresse', value: formData.location, type: 'address' }
+                { icon: '✉️', label: t("email") || 'Email', value: formData.email, href: `mailto:${formData.email}` },
+                { icon: '📱', label: t("phone") || 'Téléphone', value: formData.phone, href: `tel:${formData.phone}` },
+                { icon: '🌐', label: t("website") || 'Site', value: formData.website, href: formData.website },
+                { icon: '📍', label: t("address") || 'Adresse', value: formData.location, href: `https://maps.google.com/?q=${encodeURIComponent(formData.location)}` }
               ].filter(item => item.value).map((item, idx) => (
-                <motion.div 
+                <motion.a 
+                  href={item.href}
+                  target={item.href.startsWith('http') ? '_blank' : undefined}
+                  rel="noopener noreferrer"
                   key={idx}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.1 * idx }}
-                  whileHover={{ scale: 1.02, x: formData.layout === 'wave' ? 0 : 4, y: formData.layout === 'wave' ? -4 : 0 }}
-                  className={`flex ${formData.layout === 'wave' ? 'flex-col justify-center text-center p-5' : 'items-center gap-4 p-4'} rounded-3xl border backdrop-blur-xl cursor-pointer group shadow-[0_4px_20px_rgba(0,0,0,0.2)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.4)] transition-all ${formData.layout === 'glass' ? 'bg-black/20 border-white/20' : isLight ? 'bg-white border-zinc-100' : 'bg-white/[0.02] border-white/5'}`}
+                  whileHover={{ scale: 1.02, x: 4 }}
+                  className={`flex items-center gap-4 p-4 rounded-3xl border backdrop-blur-xl cursor-pointer group shadow-[0_4px_20px_rgba(0,0,0,0.2)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.4)] transition-all ${formData.layout === 'glass' ? 'bg-black/20 border-white/20' : isLight ? 'bg-white border-zinc-100' : 'bg-white/[0.02] border-white/5'}`}
                 >
                   {/* 3D Glossy Icon Container */}
                   <div 
-                    className={`w-14 h-14 rounded-2xl flex items-center justify-center text-white transition-all duration-500 shadow-[inset_0_4px_6px_rgba(255,255,255,0.4),inset_0_-4px_6px_rgba(0,0,0,0.2),0_8px_16px_rgba(0,0,0,0.5)] group-hover:rotate-6 group-hover:-translate-y-1 relative overflow-hidden ${formData.layout === 'wave' ? 'mb-3 mx-auto' : ''}`} 
+                    className="w-14 h-14 rounded-2xl flex items-center justify-center text-white transition-all duration-500 shadow-[inset_0_4px_6px_rgba(255,255,255,0.4),inset_0_-4px_6px_rgba(0,0,0,0.2),0_8px_16px_rgba(0,0,0,0.5)] group-hover:rotate-6 group-hover:-translate-y-1 relative overflow-hidden" 
                     style={{ background: formData.layout === 'glass' ? 'rgba(255,255,255,0.1)' : formData.theme.bg }}
                   >
                     <div className="absolute inset-0 bg-gradient-to-br from-white/60 via-white/10 to-transparent mix-blend-overlay"></div>
                     <span className="text-2xl drop-shadow-xl relative z-10 group-hover:scale-110 transition-transform">{item.icon}</span>
                   </div>
-                  <div className={`flex-1 ${formData.layout === 'wave' ? 'text-center w-full overflow-hidden' : 'text-left'}`}>
+                  <div className="flex-1 text-left">
                     <p className={`text-[10px] uppercase tracking-widest font-extrabold mb-1 ${formData.layout === 'glass' ? 'text-white/60' : isLight ? 'text-zinc-400' : 'text-zinc-500'}`}>{item.label}</p>
                     <p className={`text-sm font-semibold transition-colors drop-shadow-sm truncate ${formData.layout === 'glass' ? 'text-white group-hover:text-white' : isLight ? 'text-zinc-800 group-hover:text-zinc-900' : 'text-zinc-200 group-hover:text-white'}`}>{item.value}</p>
                   </div>
-                  {formData.layout !== 'wave' && (
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${formData.layout === 'glass' ? 'bg-white/20 text-white group-hover:bg-white/30' : isLight ? 'bg-zinc-100 text-zinc-400 group-hover:bg-zinc-200 group-hover:text-zinc-700' : 'bg-white/5 text-zinc-500 group-hover:bg-white/10 group-hover:text-white'}`}>
-                      <Share2 size={12} />
-                    </div>
-                  )}
-                </motion.div>
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${formData.layout === 'glass' ? 'bg-white/20 text-white group-hover:bg-white/30' : isLight ? 'bg-zinc-100 text-zinc-400 group-hover:bg-zinc-200 group-hover:text-zinc-700' : 'bg-white/5 text-zinc-500 group-hover:bg-white/10 group-hover:text-white'}`}>
+                    <Share2 size={12} />
+                  </div>
+                </motion.a>
               ))}
             </div>
 
@@ -979,7 +1021,7 @@ export default function DemoBuilder() {
               animate={{ y: 0 }}
               exit={{ y: "100%" }}
               transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              className="absolute bottom-0 left-0 w-full bg-[#0a0a0a] border-t border-white/10 rounded-t-3xl p-6 z-50 shadow-2xl"
+              className="absolute bottom-0 left-0 w-full bg-[#0a0a0a]/95 backdrop-blur-2xl border-t border-white/10 rounded-t-3xl p-6 z-50 shadow-2xl max-h-[60vh] overflow-y-auto scrollbar-hide"
             >
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-lg font-bold text-white">Personnaliser</h3>

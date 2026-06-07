@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { I18nProvider } from "@/context/I18nContext";
+import { Save, Share2 } from "lucide-react";
 
 import BusinessCardV1 from "@/components/templates/BusinessCardV1";
 import BusinessCardV2 from "@/components/templates/BusinessCardV2";
@@ -49,8 +50,51 @@ export default function PublishedVCard() {
       setLoading(false);
     };
 
-    fetchVCard();
+    const isClient = typeof window !== 'undefined';
+    if (isClient) {
+      fetchVCard();
+    }
   }, [params]);
+
+  const handleDownloadVCF = () => {
+    if (!data) return;
+    const vcardContent = `BEGIN:VCARD
+VERSION:3.0
+FN:${data.name}
+ORG:${data.company || ''}
+TITLE:${data.role || ''}
+TEL;TYPE=CELL:${data.phone || ''}
+EMAIL:${data.email || ''}
+URL:${data.website || ''}
+ADR;TYPE=WORK:;;${data.location || ''}
+NOTE:${data.bio || ''}
+END:VCARD`;
+
+    const blob = new Blob([vcardContent], { type: "text/vcard;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `${data.name.replace(/\s+/g, '_')}.vcf`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleShare = () => {
+    if (!data) return;
+    const shareUrl = window.location.href;
+
+    if (navigator.share) {
+      navigator.share({
+        title: data.name,
+        text: `Découvrez ma carte de visite vCard : ${data.role} chez ${data.company}`,
+        url: shareUrl,
+      }).catch(err => console.log(err));
+    } else {
+      navigator.clipboard.writeText(shareUrl);
+      alert("Lien copié !");
+    }
+  };
 
   if (loading) {
     return (
@@ -103,10 +147,28 @@ export default function PublishedVCard() {
           {renderTemplate()}
         </div>
         
+        {/* Floating Actions on Public Page */}
+        <div className="fixed bottom-6 left-6 flex items-center gap-2.5 z-50">
+          <button 
+            onClick={handleDownloadVCF}
+            className="p-3.5 bg-white text-black hover:bg-zinc-200 rounded-full shadow-2xl flex items-center justify-center transition-all hover:scale-105 active:scale-95"
+            title="Enregistrer le contact"
+          >
+            <Save size={18} />
+          </button>
+          <button 
+            onClick={handleShare}
+            className="p-3.5 bg-zinc-900 text-white hover:bg-zinc-800 border border-white/10 rounded-full shadow-2xl flex items-center justify-center transition-all hover:scale-105 active:scale-95"
+            title="Partager cette carte"
+          >
+            <Share2 size={18} />
+          </button>
+        </div>
+
         {/* Floating "Create your own" badge */}
         <a 
           href="/" 
-          className="fixed bottom-6 right-6 bg-black/80 backdrop-blur-md border border-white/20 text-white px-4 py-2 rounded-full text-xs font-bold shadow-2xl hover:scale-105 transition-transform"
+          className="fixed bottom-6 right-6 bg-black/80 backdrop-blur-md border border-white/20 text-white px-4 py-2.5 rounded-full text-xs font-bold shadow-2xl hover:scale-105 transition-transform"
         >
           Créé avec vCard Builder ⚡
         </a>
