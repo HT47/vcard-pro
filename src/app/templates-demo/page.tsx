@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState } from "react";
-import { useTranslations } from "next-intl";
 import { motion, AnimatePresence } from "framer-motion";
 
 // Import templates
@@ -17,7 +16,6 @@ import BusinessCardFreelance from "@/components/templates/BusinessCardFreelance"
 
 export default function TemplatesDemo() {
   const [activeTemplate, setActiveTemplate] = useState<number>(1);
-  const t = useTranslations("TemplatesDemo");
 
   const templates = [
     { id: 1, name: "Business V1", component: <BusinessCardV1 /> },

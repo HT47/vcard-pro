@@ -21,7 +21,7 @@ const WeeklyEvents = ({ data }: { data?: any }) => {
 
       {/* Event List */}
       <div className="flex-grow overflow-y-auto bg-[#F8F9FA] px-4 py-6 space-y-5 scrollbar-hide">
-        {eventData.map((event, index) => (
+        {eventData.map((event: any, index: number) => (
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}

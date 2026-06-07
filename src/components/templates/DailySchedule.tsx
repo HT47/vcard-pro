@@ -49,7 +49,7 @@ const DailySchedule = ({ data }: { data?: any }) => {
           animate="show"
           className="flex-grow space-y-5 overflow-y-auto pb-8 scrollbar-hide pr-2"
         >
-          {scheduleData.map((item) => (
+          {scheduleData.map((item: any) => (
             <motion.div variants={itemAnim} key={item.id} className="flex items-center group">
               {/* Time Bubble */}
               <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#E8A87C] to-[#C38D67] border-[3px] border-white flex items-center justify-center text-white font-bold text-xl shadow-lg z-10 -mr-6 relative transition-transform duration-300 group-hover:scale-110">

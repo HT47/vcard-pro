@@ -1,3 +1,4 @@
+
 import { motion } from "framer-motion";
 import { useI18n } from "@/context/I18nContext";
 
@@ -56,7 +57,7 @@ const BusinessCardWave = ({ data }: { data?: any }) => {
 
       {/* Contact Info Group */}
       <div className="w-full mt-auto mb-16 flex flex-col gap-5 px-10 text-[#1a2b6d]">
-        <motion.a 
+        <motion.a
           whileHover={{ scale: 1.05, x: -5 }}
           whileTap={{ scale: 0.95 }}
           href={`tel:${phone}`}
@@ -68,7 +69,7 @@ const BusinessCardWave = ({ data }: { data?: any }) => {
           </div>
         </motion.a>
 
-        <motion.a 
+        <motion.a
           whileHover={{ scale: 1.05, x: -5 }}
           whileTap={{ scale: 0.95 }}
           href={`mailto:${email}`}
@@ -80,7 +81,7 @@ const BusinessCardWave = ({ data }: { data?: any }) => {
           </div>
         </motion.a>
 
-        <motion.a 
+        <motion.a
           whileHover={{ scale: 1.05, x: -5 }}
           whileTap={{ scale: 0.95 }}
           href={website?.startsWith('http') ? website : `https://${website}`}
