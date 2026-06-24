@@ -686,35 +686,88 @@ export default function DemoBuilder() {
               </div>
             </div>
 
-            {/* AVATAR & COVER */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <label className="block text-[11px] font-medium text-zinc-400 mx-1">Photo Profil (URL ou Fichier)</label>
-                <div className="relative flex items-center gap-2">
-                  <div className="relative flex-1">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <User size={14} className="text-zinc-500" />
-                    </div>
-                    <input type="text" name="avatarUrl" value={formData.avatarUrl} onChange={handleChange} placeholder="https://..." className="w-full bg-white/[0.03] border border-white/10 rounded-xl pl-9 pr-3 py-3 text-sm text-white focus:outline-none focus:border-white/30 transition-all" />
+            {/* AVATAR & COVER - STYLE PRO MAX */}
+            <div className="space-y-3">
+              <label className="block text-[11px] font-medium text-zinc-400 mx-1">
+                Aperçu et importation des visuels
+              </label>
+              
+              <div className="relative h-32 w-full rounded-2xl border border-white/10 bg-white/[0.01] overflow-hidden group/cover transition-all duration-300 hover:border-white/20">
+                {/* Cover Image */}
+                {formData.coverUrl ? (
+                  <img src={formData.coverUrl} className="w-full h-full object-cover" alt="Cover" />
+                ) : (
+                  <div className="w-full h-full bg-gradient-to-r from-zinc-900 to-zinc-950 flex items-center justify-center text-zinc-600 text-xs border-dashed border-2 border-white/5 rounded-2xl">
+                    Aucune image de couverture
                   </div>
-                  <div className="relative w-11 h-11 shrink-0 rounded-xl bg-white/[0.05] border border-white/10 hover:bg-white/10 flex items-center justify-center transition-all overflow-hidden">
-                    <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e, 'avatarUrl')} className="absolute inset-0 opacity-0 cursor-pointer" title="Uploader une image" />
-                    <UploadCloud size={16} className="text-zinc-300" />
+                )}
+                
+                {/* Cover Image Upload Hover Overlay */}
+                <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px] opacity-0 group-hover/cover:opacity-100 transition-all duration-200 flex items-center justify-center gap-2">
+                  <div className="relative px-3.5 py-2 bg-white text-black font-bold text-xs rounded-xl hover:scale-105 transition-transform cursor-pointer overflow-hidden flex items-center gap-2 shadow-xl">
+                    <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e, 'coverUrl')} className="absolute inset-0 opacity-0 cursor-pointer" />
+                    <UploadCloud size={14} />
+                    Importer la bannière
+                  </div>
+                  {formData.coverUrl && (
+                    <button 
+                      onClick={() => setFormData(prev => ({ ...prev, coverUrl: "" }))}
+                      className="p-2 bg-red-500/20 hover:bg-red-500/40 text-red-400 border border-red-500/30 rounded-xl transition-colors shadow-lg"
+                      title="Supprimer la bannière"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  )}
+                </div>
+
+                {/* Profile Avatar overlayed bottom-left */}
+                <div className="absolute bottom-3 left-4 group/avatar z-10">
+                  <div className="relative w-16 h-16 rounded-full border-[3px] border-black bg-zinc-900 shadow-2xl overflow-hidden">
+                    {formData.avatarUrl ? (
+                      <img src={formData.avatarUrl} className="w-full h-full object-cover" alt="Avatar" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-zinc-500 bg-zinc-800">
+                        <User size={24} />
+                      </div>
+                    )}
+                    
+                    {/* Avatar Upload Hover Overlay */}
+                    <label className="absolute inset-0 bg-black/60 opacity-0 group-hover/avatar:opacity-100 transition-opacity flex items-center justify-center cursor-pointer">
+                      <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e, 'avatarUrl')} className="absolute inset-0 opacity-0 cursor-pointer" />
+                      <UploadCloud size={16} className="text-white" />
+                    </label>
                   </div>
                 </div>
               </div>
-              <div className="space-y-1">
-                <label className="block text-[11px] font-medium text-zinc-400 mx-1">Image Couverture (URL / Fichier)</label>
-                <div className="relative flex items-center gap-2">
-                  <div className="relative flex-1">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <Star size={14} className="text-zinc-500" />
-                    </div>
-                    <input type="text" name="coverUrl" value={formData.coverUrl} onChange={handleChange} placeholder="https://..." className="w-full bg-white/[0.03] border border-white/10 rounded-xl pl-9 pr-3 py-3 text-sm text-white focus:outline-none focus:border-white/30 transition-all" />
+
+              {/* URL Text fields (Subtle fallback fields) */}
+              <div className="grid grid-cols-2 gap-3 pt-1">
+                <div className="space-y-1">
+                  <label className="block text-[9px] font-medium text-zinc-500 mx-1">Lien direct photo profil</label>
+                  <div className="relative">
+                    <User size={10} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-600" />
+                    <input 
+                      type="text" 
+                      name="avatarUrl" 
+                      value={formData.avatarUrl} 
+                      onChange={handleChange} 
+                      placeholder="https://..." 
+                      className="w-full bg-white/[0.02] border border-white/10 hover:border-white/20 rounded-xl pl-7 pr-3 py-2 text-[11px] text-zinc-300 focus:outline-none focus:border-white/30 focus:bg-white/[0.04] transition-all" 
+                    />
                   </div>
-                  <div className="relative w-11 h-11 shrink-0 rounded-xl bg-white/[0.05] border border-white/10 hover:bg-white/10 flex items-center justify-center transition-all overflow-hidden">
-                    <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e, 'coverUrl')} className="absolute inset-0 opacity-0 cursor-pointer" title="Uploader une image" />
-                    <UploadCloud size={16} className="text-zinc-300" />
+                </div>
+                <div className="space-y-1">
+                  <label className="block text-[9px] font-medium text-zinc-500 mx-1">Lien direct couverture</label>
+                  <div className="relative">
+                    <Star size={10} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-600" />
+                    <input 
+                      type="text" 
+                      name="coverUrl" 
+                      value={formData.coverUrl} 
+                      onChange={handleChange} 
+                      placeholder="https://..." 
+                      className="w-full bg-white/[0.02] border border-white/10 hover:border-white/20 rounded-xl pl-7 pr-3 py-2 text-[11px] text-zinc-300 focus:outline-none focus:border-white/30 focus:bg-white/[0.04] transition-all" 
+                    />
                   </div>
                 </div>
               </div>
