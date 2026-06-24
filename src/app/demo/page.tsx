@@ -32,6 +32,65 @@ import LinkInBioTree from "@/components/templates/LinkInBioTree";
 import LinkInBioBeacons from "@/components/templates/LinkInBioBeacons";
 import LinkInBioSites from "@/components/templates/LinkInBioSites";
 
+// Compression d'image côté client pour économiser la bande passante et le stockage
+const compressImage = (file: File, maxWidth = 800, maxHeight = 800): Promise<string> => {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (event) => {
+      const img = new window.Image();
+      img.src = event.target?.result as string;
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > maxWidth) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          }
+        } else {
+          if (height > maxHeight) {
+            width = Math.round((width * maxHeight) / height);
+            height = maxHeight;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          resolve(event.target?.result as string);
+          return;
+        }
+        ctx.drawImage(img, 0, 0, width, height);
+        // Compresser en JPEG 0.7
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+        resolve(dataUrl);
+      };
+      img.onerror = () => {
+        resolve(event.target?.result as string);
+      };
+    };
+    reader.onerror = () => {
+      resolve("");
+    };
+  });
+};
+
+const dataURLtoFile = (dataurl: string, filename: string): File => {
+  const arr = dataurl.split(',');
+  const mime = arr[0].match(/:(.*?);/)?.[1] || 'image/jpeg';
+  const bstr = atob(arr[1]);
+  let n = bstr.length;
+  const u8arr = new Uint8Array(n);
+  while (n--) {
+    u8arr[n] = bstr.charCodeAt(n);
+  }
+  return new File([u8arr], filename, { type: mime });
+};
+
 const THEMES = [
   // Dark & Premium
   { id: 'neon-blue', name: 'Neon Blue', bg: '#0ea5e9', gradient: 'linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%)', shadow: 'rgba(14, 165, 233, 0.4)', type: 'dark' },
@@ -219,30 +278,45 @@ export default function DemoBuilder() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      alert(t("login_required") || "Connectez-vous pour uploader des images.");
-      return;
+    try {
+      // 1. Compresser et afficher instantanément l'image en Base64 (preview et fallback local robuste)
+      const compressedBase64 = await compressImage(file);
+      if (compressedBase64) {
+        setFormData(prev => ({ ...prev, [field]: compressedBase64 }));
+      }
+
+      // 2. Tenter de l'uploader sur Supabase Storage en arrière-plan si connecté
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        const fileExt = file.name.split('.').pop() || 'jpg';
+        const fileName = `${field}_${Math.random().toString(36).substring(2)}.${fileExt}`;
+        const filePath = `${session.user.id}/${fileName}`;
+
+        // Convertir le base64 compressé en fichier pour l'upload Supabase
+        const uploadFile = dataURLtoFile(compressedBase64, fileName);
+
+        const { error: uploadError } = await supabase.storage
+          .from('avatars')
+          .upload(filePath, uploadFile);
+
+        if (!uploadError) {
+          const { data: { publicUrl } } = supabase.storage
+            .from('avatars')
+            .getPublicUrl(filePath);
+
+          if (publicUrl) {
+            // Remplacer le Base64 par l'URL publique Supabase une fois l'upload réussi
+            setFormData(prev => ({ ...prev, [field]: publicUrl }));
+          }
+        } else {
+          console.warn("Supabase storage upload failed, keeping Base64 preview:", uploadError.message);
+        }
+      } else {
+        console.log("User not logged in, keeping local Base64 preview");
+      }
+    } catch (err) {
+      console.error("Error in handleImageUpload:", err);
     }
-
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${session.user.id}_${field}_${Math.random().toString(36).substring(2)}.${fileExt}`;
-    const filePath = `${fileName}`;
-
-    const { error: uploadError } = await supabase.storage
-      .from('avatars')
-      .upload(filePath, file);
-
-    if (uploadError) {
-      alert("Erreur upload: " + uploadError.message);
-      return;
-    }
-
-    const { data: { publicUrl } } = supabase.storage
-      .from('avatars')
-      .getPublicUrl(filePath);
-
-    setFormData(prev => ({ ...prev, [field]: publicUrl }));
   };
 
   const handlePublish = async () => {
