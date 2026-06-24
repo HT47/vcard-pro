@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 
 export default function SettingsPage() {
-  const { t, isRTL, language, setLanguage } = useI18n();
+  const { t, isRTL, locale, setLocale } = useI18n();
   const router = useRouter();
 
   const handleLogout = async () => {
@@ -72,8 +72,8 @@ export default function SettingsPage() {
               <SettingItem
                 icon={Globe}
                 label={t('language') || 'Langue'}
-                value={language.toUpperCase()}
-                onClick={() => setLanguage(language === 'fr' ? 'en' : 'fr')}
+                value={locale.toUpperCase()}
+                onClick={() => setLocale(locale === 'fr' ? 'en' : 'fr')}
               />
               <SettingItem icon={Moon} label={t('theme') || 'Thème'} value="Dark" />
               <SettingItem icon={Bell} label="Notifications" />
