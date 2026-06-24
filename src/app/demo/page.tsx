@@ -215,6 +215,36 @@ export default function DemoBuilder() {
     }));
   };
 
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, field: 'avatarUrl' | 'coverUrl') => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      alert(t("login_required") || "Connectez-vous pour uploader des images.");
+      return;
+    }
+
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${session.user.id}_${field}_${Math.random().toString(36).substring(2)}.${fileExt}`;
+    const filePath = `${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('avatars')
+      .upload(filePath, file);
+
+    if (uploadError) {
+      alert("Erreur upload: " + uploadError.message);
+      return;
+    }
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('avatars')
+      .getPublicUrl(filePath);
+
+    setFormData(prev => ({ ...prev, [field]: publicUrl }));
+  };
+
   const handlePublish = async () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) {
@@ -585,21 +615,33 @@ export default function DemoBuilder() {
             {/* AVATAR & COVER */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1">
-                <label className="block text-[11px] font-medium text-zinc-400 mx-1">Photo de Profil (URL)</label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <User size={14} className="text-zinc-500" />
+                <label className="block text-[11px] font-medium text-zinc-400 mx-1">Photo Profil (URL ou Fichier)</label>
+                <div className="relative flex items-center gap-2">
+                  <div className="relative flex-1">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <User size={14} className="text-zinc-500" />
+                    </div>
+                    <input type="text" name="avatarUrl" value={formData.avatarUrl} onChange={handleChange} placeholder="https://..." className="w-full bg-white/[0.03] border border-white/10 rounded-xl pl-9 pr-3 py-3 text-sm text-white focus:outline-none focus:border-white/30 transition-all" />
                   </div>
-                  <input type="text" name="avatarUrl" value={formData.avatarUrl} onChange={handleChange} placeholder="https://..." className="w-full bg-white/[0.03] border border-white/10 rounded-xl pl-9 pr-3 py-3 text-sm text-white focus:outline-none focus:border-white/30 focus:bg-white/[0.06] transition-all" />
+                  <div className="relative w-11 h-11 shrink-0 rounded-xl bg-white/[0.05] border border-white/10 hover:bg-white/10 flex items-center justify-center transition-all overflow-hidden">
+                    <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e, 'avatarUrl')} className="absolute inset-0 opacity-0 cursor-pointer" title="Uploader une image" />
+                    <UploadCloud size={16} className="text-zinc-300" />
+                  </div>
                 </div>
               </div>
               <div className="space-y-1">
-                <label className="block text-[11px] font-medium text-zinc-400 mx-1">Image de Couverture (URL)</label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Star size={14} className="text-zinc-500" />
+                <label className="block text-[11px] font-medium text-zinc-400 mx-1">Image Couverture (URL / Fichier)</label>
+                <div className="relative flex items-center gap-2">
+                  <div className="relative flex-1">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <Star size={14} className="text-zinc-500" />
+                    </div>
+                    <input type="text" name="coverUrl" value={formData.coverUrl} onChange={handleChange} placeholder="https://..." className="w-full bg-white/[0.03] border border-white/10 rounded-xl pl-9 pr-3 py-3 text-sm text-white focus:outline-none focus:border-white/30 transition-all" />
                   </div>
-                  <input type="text" name="coverUrl" value={formData.coverUrl} onChange={handleChange} placeholder="https://..." className="w-full bg-white/[0.03] border border-white/10 rounded-xl pl-9 pr-3 py-3 text-sm text-white focus:outline-none focus:border-white/30 focus:bg-white/[0.06] transition-all" />
+                  <div className="relative w-11 h-11 shrink-0 rounded-xl bg-white/[0.05] border border-white/10 hover:bg-white/10 flex items-center justify-center transition-all overflow-hidden">
+                    <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e, 'coverUrl')} className="absolute inset-0 opacity-0 cursor-pointer" title="Uploader une image" />
+                    <UploadCloud size={16} className="text-zinc-300" />
+                  </div>
                 </div>
               </div>
             </div>
