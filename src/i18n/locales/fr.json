@@ -126,5 +126,15 @@
   "error_user_exists": "Un compte existe déjà avec cet email.",
   "resend_confirmation": "Renvoyer le lien de confirmation",
   "resending": "Renvoi...",
-  "resend_success": "Lien de confirmation renvoyé ! Veuillez vérifier vos e-mails."
+  "resend_success": "Lien de confirmation renvoyé ! Veuillez vérifier vos e-mails.",
+  "forgot_password": "Mot de passe oublié ?",
+  "back_to_login": "Retour à la connexion",
+  "forgot_password_desc": "Entrez votre adresse email et nous vous enverrons un lien pour réinitialiser votre mot de passe.",
+  "reset_link_sent": "Lien de réinitialisation envoyé ! Vérifiez votre boîte mail.",
+  "send_reset_link": "Envoyer le lien",
+  "reset_password": "Nouveau mot de passe",
+  "reset_password_desc": "Entrez votre nouveau mot de passe ci-dessous.",
+  "password_updated": "Mot de passe mis à jour avec succès !",
+  "new_password": "Nouveau mot de passe",
+  "update_password": "Mettre à jour"
 }

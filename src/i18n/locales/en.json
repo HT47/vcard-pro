@@ -126,5 +126,15 @@
   "error_user_exists": "An account already exists with this email.",
   "resend_confirmation": "Resend confirmation link",
   "resending": "Resending...",
-  "resend_success": "Confirmation link resent! Please check your inbox."
+  "resend_success": "Confirmation link resent! Please check your inbox.",
+  "forgot_password": "Forgot password?",
+  "back_to_login": "Back to login",
+  "forgot_password_desc": "Enter your email address and we will send you a link to reset your password.",
+  "reset_link_sent": "Reset link sent! Check your inbox.",
+  "send_reset_link": "Send link",
+  "reset_password": "New password",
+  "reset_password_desc": "Enter your new password below.",
+  "password_updated": "Password updated successfully!",
+  "new_password": "New password",
+  "update_password": "Update"
 }

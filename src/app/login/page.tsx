@@ -109,7 +109,10 @@ export default function Login() {
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-zinc-400 mb-1">{t("password") || "Mot de passe"}</label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-xs font-medium text-zinc-400">{t("password") || "Mot de passe"}</label>
+              <a href="/forgot-password" className="text-xs text-zinc-500 hover:text-white transition-colors">{t("forgot_password") || "Mot de passe oublié ?"}</a>
+            </div>
             <input 
               type="password" 
               required
