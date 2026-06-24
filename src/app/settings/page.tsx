@@ -92,7 +92,7 @@ export default function SettingsPage() {
           <section className="space-y-3">
             <h3 className="text-xs font-semibold text-zinc-500 uppercase tracking-widest pl-2">{t('account_settings') || 'Compte'}</h3>
             <div className="space-y-2">
-              <Link href="/profile" className="block w-full">
+              <Link href="/demo" className="block w-full">
                 <SettingItem icon={User} label={t('my_profile') || 'Mon Profil'} />
               </Link>
               <SettingItem

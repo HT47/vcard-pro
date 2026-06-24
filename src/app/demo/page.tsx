@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Smartphone, Share2, Save, X, Edit3, Eye, UploadCloud, CheckCircle2, Settings2, Plus, Trash2, Link as LinkIcon, Briefcase, Calendar, Building, Activity, CreditCard, Wind, Layers, LayoutTemplate, Box, LayoutDashboard, User, Hexagon, Sun, Star, Tag, Home, LayoutGrid } from "lucide-react";
+import { Smartphone, Share2, Save, X, Edit3, Eye, UploadCloud, CheckCircle2, Settings2, Plus, Trash2, Link as LinkIcon, Briefcase, Calendar, Building, Activity, CreditCard, Wind, Layers, LayoutTemplate, Box, LayoutDashboard, User, Hexagon, Sun, Star, Tag, Home, LayoutGrid, ArrowRight, Palette } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { QRCodeSVG } from "qrcode.react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useI18n } from "@/context/I18nContext";
@@ -50,18 +51,17 @@ const THEMES = [
 ];
 
 export default function DemoBuilder() {
-  const { t, locale, translations } = useI18n();
+  const { t, locale, translations, isRTL } = useI18n();
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<"edit" | "preview">("edit");
-  const [activeCategoryTab, setActiveCategoryTab] = useState("Cartes & Profils");
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [activeCategoryTab, setActiveCategoryTab] = useState(t("category_cards") || "Cartes & Profils");
   const [isPublishing, setIsPublishing] = useState(false);
   const [publishedSlug, setPublishedSlug] = useState<string | null>(null);
   const [publishedUsername, setPublishedUsername] = useState<string | null>(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const coverInputRef = useRef<HTMLInputElement>(null);
   
   const [formData, setFormData] = useState({
+    username: "",
     name: t("default_name") || "Alexandre Dubois",
     role: t("default_role") || "Directeur Créatif",
     company: t("default_company") || "NextLevel Agency",
@@ -71,8 +71,8 @@ export default function DemoBuilder() {
     location: t("default_location") || "75008 Paris, France",
     bio: t("default_bio") || "Passionné par le design UI/UX et la création d'expériences numériques mémorables.",
     theme: THEMES[0],
-    layout: 'classic',
-    mode: 'light',
+    layout: 'classic-pro',
+    mode: 'dark',
     avatarUrl: "",
     coverUrl: "",
     socialLinks: [
@@ -118,12 +118,28 @@ export default function DemoBuilder() {
     }
   });
 
+  useEffect(() => {
+    const fetchUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('username')
+          .eq('id', session.user.id)
+          .single();
+        if (profileData) {
+          setFormData(prev => ({ ...prev, username: profileData.username }));
+        }
+      }
+    };
+    fetchUser();
+  }, []);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  // Sync demo defaults whenever the active dictionary changes
   useEffect(() => {
     const getName = (key: string, fallback: string) => translations[key] && translations[key] !== key ? translations[key] : fallback;
     setFormData(prev => ({
@@ -135,37 +151,6 @@ export default function DemoBuilder() {
       bio: getName("default_bio", "Passionné par le design UI/UX et la création d'expériences numériques mémorables.")
     }));
   }, [translations]);
-
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const url = URL.createObjectURL(file);
-      setFormData(prev => ({ ...prev, avatarUrl: url }));
-    }
-  };
-
-  const handleCoverUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const url = URL.createObjectURL(file);
-      setFormData(prev => ({ ...prev, coverUrl: url }));
-    }
-  };
-
-  const handleCustomColor = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const color = e.target.value;
-    setFormData(prev => ({
-      ...prev,
-      theme: {
-        id: 'custom',
-        name: 'Sur Mesure',
-        bg: color,
-        gradient: `linear-gradient(135deg, ${color} 0%, #000000 100%)`,
-        shadow: `${color}80`,
-        type: 'dark'
-      }
-    }));
-  };
 
   const addSocialLink = () => {
     setFormData(prev => ({
@@ -231,7 +216,6 @@ export default function DemoBuilder() {
   };
 
   const handlePublish = async () => {
-    // Check if user is logged in first
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) {
       setShowLoginModal(true);
@@ -241,167 +225,40 @@ export default function DemoBuilder() {
     setIsPublishing(true);
     const slug = Math.random().toString(36).substring(2, 10);
 
-    // Fetch user profile to get username
-    const { data: profileData } = await supabase
-      .from('profiles')
-      .select('username')
-      .eq('id', session.user.id)
-      .single();
-
-    const username = profileData?.username || null;
-
-    // Unset previous primary if this is first publish
-    if (username) {
-      const { count } = await supabase
-        .from('vcards')
-        .select('id', { count: 'exact', head: true })
-        .eq('user_id', session.user.id)
-        .eq('is_primary', true);
-      
-      const isPrimary = (count ?? 0) === 0;
-
-      const { error } = await supabase
-        .from('vcards')
-        .insert([{ slug, data: formData, user_id: session.user.id, is_primary: isPrimary }]);
-
-      setIsPublishing(false);
-      if (!error) {
-        setPublishedSlug(slug);
-        setPublishedUsername(username);
-      } else {
-        console.error(error);
-        alert('Erreur lors de la publication : ' + error.message);
-      }
+    // Mettre à jour l'identifiant public (sous-domaine/username)
+    if (formData.username && formData.username.trim() !== '') {
+      const usernameClean = formData.username.toLowerCase().replace(/\s/g, '-');
+      await supabase.from('profiles').update({ username: usernameClean }).eq('id', session.user.id);
+      setPublishedUsername(usernameClean);
     } else {
-      // No profile yet — save without username
-      const { error } = await supabase
-        .from('vcards')
-        .insert([{ slug, data: formData, user_id: session.user.id }]);
-      setIsPublishing(false);
-      if (!error) {
-        setPublishedSlug(slug);
-      } else {
-        alert('Erreur : ' + error.message);
-      }
-    }
-  };
-
-  const handleDownloadVCF = () => {
-    const vcardContent = `BEGIN:VCARD
-VERSION:3.0
-FN:${formData.name}
-ORG:${formData.company}
-TITLE:${formData.role}
-TEL;TYPE=CELL:${formData.phone}
-EMAIL:${formData.email}
-URL:${formData.website}
-ADR;TYPE=WORK:;;${formData.location}
-NOTE:${formData.bio}
-END:VCARD`;
-
-    const blob = new Blob([vcardContent], { type: "text/vcard;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.setAttribute("download", `${formData.name.replace(/\s+/g, '_')}.vcf`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  const handleShare = () => {
-    if (!publishedSlug) {
-      alert(t("publish_first_to_share") || "Veuillez d'abord publier votre vCard pour obtenir un lien de partage unique.");
-      return;
+      const { data: profileData } = await supabase.from('profiles').select('username').eq('id', session.user.id).single();
+      if (profileData?.username) setPublishedUsername(profileData.username);
     }
 
-    const shareUrl = `${window.location.origin}/v/${publishedSlug}`;
+    const { count } = await supabase
+      .from('vcards')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', session.user.id)
+      .eq('is_primary', true);
+    
+    const isPrimary = (count ?? 0) === 0;
 
-    if (navigator.share) {
-      navigator.share({
-        title: formData.name,
-        text: `Découvrez ma carte de visite vCard : ${formData.role} chez ${formData.company}`,
-        url: shareUrl,
-      }).catch(err => console.log(err));
+    const { error } = await supabase
+      .from('vcards')
+      .insert([{ slug, data: formData, user_id: session.user.id, is_primary: isPrimary }]);
+
+    setIsPublishing(false);
+    if (!error) {
+      setPublishedSlug(slug);
     } else {
-      navigator.clipboard.writeText(shareUrl);
-      alert(t("link_copied") || "Lien copié dans le presse-papier !");
+      alert(t("error_publish") || 'Erreur lors de la publication : ' + error.message);
     }
   };
-
-  const SOCIAL_PLATFORMS = ["LinkedIn", "Twitter", "Instagram", "Facebook", "Github", "Youtube", "Website", "Autre"];
-
-  const getPlatformIcon = (platform: string) => {
-    switch(platform) {
-      case "LinkedIn": return (
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path><rect x="2" y="9" width="4" height="12"></rect><circle cx="4" cy="4" r="2"></circle>
-        </svg>
-      );
-      case "Twitter": return (
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"></path>
-        </svg>
-      );
-      case "Instagram": return (
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
-        </svg>
-      );
-      case "Facebook": return (
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path>
-        </svg>
-      );
-      case "Github": return (
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
-        </svg>
-      );
-      case "Youtube": return (
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.25 29 29 0 0 0-.46-5.33z"></path><polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02"></polygon>
-        </svg>
-      );
-      default: return <LinkIcon size={18} />;
-    }
-  };
-
-  const ThemeSelector = () => (
-    <div className="flex flex-wrap gap-4 items-center">
-      <div className="relative w-12 h-12 rounded-full border border-white/20 overflow-hidden flex items-center justify-center bg-zinc-900 transition-all hover:ring-2 hover:ring-white cursor-pointer shadow-lg group">
-        <input 
-          type="color" 
-          onChange={handleCustomColor} 
-          className="absolute inset-[-10px] w-20 h-20 opacity-0 cursor-pointer z-10" 
-          title="Couleur Personnalisée" 
-        />
-        <img width="24" height="24" src="https://img.icons8.com/nolan/64/color-wheel.png" alt="color-wheel" className="pointer-events-none group-hover:scale-110 transition-transform"/>
-        {formData.theme.id === 'custom' && (
-          <div className="absolute inset-0 bg-black/50 flex items-center justify-center pointer-events-none">
-            <CheckCircle2 size={16} className="text-white drop-shadow-md" />
-          </div>
-        )}
-      </div>
-      {THEMES.map(theme => (
-        <motion.button 
-          key={theme.id}
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}
-          onClick={() => setFormData(prev => ({ ...prev, theme }))}
-          className={`relative w-12 h-12 rounded-full transition-all flex items-center justify-center ${formData.theme.id === theme.id ? 'ring-2 ring-white ring-offset-4 ring-offset-[#0a0a0a]' : 'opacity-80 hover:opacity-100'}`}
-          style={{ background: theme.gradient, boxShadow: formData.theme.id === theme.id ? `0 0 20px ${theme.shadow}` : 'none' }}
-        >
-          {formData.theme.id === theme.id && <CheckCircle2 size={20} className="text-white drop-shadow-md" />}
-        </motion.button>
-      ))}
-    </div>
-  );
 
   const LayoutSelector = () => {
     const categories = [
       {
-        name: 'Liens en Bio',
+        name: t("category_links") || 'Liens en Bio',
         icon: <LinkIcon size={16} className="text-purple-400" />,
         layouts: [
           { id: 'link-tree', label: 'Classic Tree', icon: <Box size={20} strokeWidth={1.5} /> },
@@ -410,14 +267,9 @@ END:VCARD`;
         ]
       },
       {
-        name: 'Cartes & Profils',
+        name: t("category_cards") || 'Cartes & Profils',
         icon: <Briefcase size={16} className="text-blue-400" />,
         layouts: [
-          { id: 'classic', label: 'Classic', icon: <CreditCard size={20} strokeWidth={1.5} /> },
-          { id: 'wave', label: 'Wave', icon: <Wind size={20} strokeWidth={1.5} /> },
-          { id: 'glass', label: 'Glass', icon: <Layers size={20} strokeWidth={1.5} /> },
-          { id: 'minimal', label: 'Minimal', icon: <LayoutTemplate size={20} strokeWidth={1.5} /> },
-          { id: 'brutal', label: 'Brutal', icon: <Box size={20} strokeWidth={1.5} /> },
           { id: 'structure-pro', label: 'Structure', icon: <LayoutDashboard size={20} strokeWidth={1.5} /> },
           { id: 'classic-pro', label: 'Classic Pro', icon: <CreditCard size={20} strokeWidth={1.5} /> },
           { id: 'wave-pro', label: 'Wave Pro', icon: <Wind size={20} strokeWidth={1.5} /> },
@@ -430,7 +282,7 @@ END:VCARD`;
         ]
       },
       {
-        name: 'Agendas & Événements',
+        name: t("category_events") || 'Agendas & Événements',
         icon: <Calendar size={16} className="text-emerald-400" />,
         layouts: [
           { id: 'agenda-jour', label: 'Journée', icon: <Calendar size={20} strokeWidth={1.5} /> },
@@ -440,7 +292,7 @@ END:VCARD`;
         ]
       },
       {
-        name: 'Immobilier',
+        name: t("category_realestate") || 'Immobilier',
         icon: <Building size={16} className="text-orange-400" />,
         layouts: [
           { id: 'immo-simple', label: 'Simple', icon: <Home size={20} strokeWidth={1.5} /> },
@@ -449,7 +301,7 @@ END:VCARD`;
         ]
       },
       {
-        name: 'Fitness & Bien-être',
+        name: t("category_fitness") || 'Fitness & Bien-être',
         icon: <Activity size={16} className="text-rose-400" />,
         layouts: [
           { id: 'yoga-poster', label: 'Affiche', icon: <Activity size={20} strokeWidth={1.5} /> },
@@ -499,7 +351,6 @@ END:VCARD`;
                       </div>
                     )}
                     
-                    {/* Visual Thumbnail / Icon */}
                     <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-3 transition-colors ${isActive ? 'bg-white text-black shadow-lg shadow-white/20' : 'bg-black/30 text-zinc-400 group-hover:text-white group-hover:bg-white/10 border border-white/5'}`}>
                       {layoutObj.icon}
                     </div>
@@ -517,811 +368,384 @@ END:VCARD`;
     );
   };
 
-  const ModeSelector = () => (
-    <div className="flex gap-3 w-full">
-      {['dark', 'light'].map((mode) => (
-        <button
-          key={mode}
-          onClick={() => setFormData(prev => ({ ...prev, mode }))}
-          className={`flex-1 flex items-center justify-center gap-2 py-3 text-xs font-bold uppercase tracking-wider rounded-xl border transition-all ${formData.mode === mode ? 'bg-white text-black border-white shadow-lg' : 'bg-white/5 text-zinc-400 border-white/10 hover:bg-white/10'}`}
-        >
-          {mode === 'dark' ? '🌙 Sombre' : '☀️ Clair'}
-        </button>
-      ))}
-    </div>
-  );
-
-  const EditorPanel = () => (
-    <motion.div 
-      initial={{ opacity: 0, x: -20 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: -20 }}
-      className="w-full md:w-1/2 lg:w-5/12 h-full flex flex-col z-10 bg-[#0a0a0a] md:border-r border-white/10"
-    >
-      <div className="p-4 md:p-6 border-b border-white/10 flex items-center justify-between bg-black/40 backdrop-blur-md sticky top-0 z-20">
-        <div>
-          <h1 className="text-lg md:text-xl font-bold text-white tracking-tight">{t('editor_title')}</h1>
-          <p className="text-[10px] md:text-xs text-zinc-400 font-medium">Pro Max Edition</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <LanguageSwitcher />
-          
-          <button 
-            onClick={handlePublish}
-            disabled={isPublishing}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-full text-xs font-bold transition-colors shadow-lg shadow-blue-500/20"
-          >
-            {isPublishing ? <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin"></div> : <UploadCloud size={14} />}
-            <span className="hidden sm:inline">Publier</span>
-          </button>
-
-          <Link href="/" className="p-2 bg-white/5 hover:bg-white/10 rounded-full transition-colors backdrop-blur-sm group">
-            <X size={18} className="text-zinc-400 group-hover:text-white transition-colors" />
-          </Link>
-        </div>
-      </div>
-
-      <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-8 scrollbar-hide pb-32 md:pb-6">
-        
-        {/* Photo Upload Section */}
-        <section className="space-y-6">
-          <div>
-            <h2 className="text-xs font-semibold uppercase tracking-widest text-zinc-500 mb-4">{t('profile_photo')}</h2>
-            <div className="flex items-center gap-4">
-              <div className="relative w-16 h-16 rounded-full bg-zinc-900 border border-white/10 overflow-hidden flex-shrink-0 flex items-center justify-center">
-                {formData.avatarUrl ? (
-                  <img src={formData.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
-                ) : (
-                  <span className="text-2xl">{formData.name.charAt(0) || '👤'}</span>
-                )}
-              </div>
-              <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleImageUpload} />
-              <motion.button 
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => fileInputRef.current?.click()}
-                className="flex-1 border border-dashed border-white/20 hover:border-white/40 bg-white/[0.02] hover:bg-white/[0.04] text-zinc-300 rounded-xl px-4 py-3 text-sm font-medium transition-colors flex items-center justify-center gap-2"
-              >
-                <UploadCloud size={18} />
-                {t('avatar')}
-              </motion.button>
-            </div>
-          </div>
-
-          <div>
-            <h2 className="text-xs font-semibold uppercase tracking-widest text-zinc-500 mb-4">{t('cover_photo')}</h2>
-            <div className="flex items-center gap-4">
-              <div className="relative w-24 h-16 rounded-xl bg-zinc-900 border border-white/10 overflow-hidden flex-shrink-0 flex items-center justify-center">
-                {formData.coverUrl ? (
-                  <img src={formData.coverUrl} alt="Cover" className="w-full h-full object-cover" />
-                ) : (
-                  <span className="text-xl text-zinc-600">🖼️</span>
-                )}
-              </div>
-              <input type="file" accept="image/*" className="hidden" ref={coverInputRef} onChange={handleCoverUpload} />
-              <motion.button 
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => coverInputRef.current?.click()}
-                className="flex-1 border border-dashed border-white/20 hover:border-white/40 bg-white/[0.02] hover:bg-white/[0.04] text-zinc-300 rounded-xl px-4 py-3 text-sm font-medium transition-colors flex items-center justify-center gap-2"
-              >
-                <UploadCloud size={18} />
-                {t('cover')}
-              </motion.button>
-            </div>
-          </div>
-        </section>
-
-        <section className="space-y-4 pt-6 border-t border-white/5">
-          <h2 className="text-xs font-semibold uppercase tracking-widest text-zinc-500">{t('profile')}</h2>
-          <div className="space-y-4">
-            <div>
-              <label className="block text-[11px] font-medium text-zinc-400 mb-1.5 mx-1">{t('full_name')}</label>
-              <input 
-                type="text" name="name" value={formData.name} onChange={handleChange}
-                className="w-full bg-white/[0.02] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-white/30 focus:bg-white/[0.05] transition-all"
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-[11px] font-medium text-zinc-400 mb-1.5 mx-1">{t('role')}</label>
-                <input 
-                  type="text" name="role" value={formData.role} onChange={handleChange}
-                  className="w-full bg-white/[0.02] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-white/30 focus:bg-white/[0.05] transition-all"
-                />
-              </div>
-              <div>
-                <label className="block text-[11px] font-medium text-zinc-400 mb-1.5 mx-1">{t('company')}</label>
-                <input 
-                  type="text" name="company" value={formData.company} onChange={handleChange}
-                  className="w-full bg-white/[0.02] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-white/30 focus:bg-white/[0.05] transition-all"
-                />
-              </div>
-            </div>
-            <div>
-              <label className="block text-[11px] font-medium text-zinc-400 mb-1.5 mx-1">{t('bio')}</label>
-              <textarea 
-                name="bio" value={formData.bio} onChange={handleChange} rows={3}
-                className="w-full bg-white/[0.02] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-white/30 focus:bg-white/[0.05] transition-all resize-none"
-              />
-            </div>
-          </div>
-        </section>
-
-        <section className="space-y-4 pt-6 border-t border-white/5">
-          <h2 className="text-xs font-semibold uppercase tracking-widest text-zinc-500">Contact</h2>
-          <div className="space-y-4">
-            <div>
-              <label className="block text-[11px] font-medium text-zinc-400 mb-1.5 ml-1">Email</label>
-              <input 
-                type="email" name="email" value={formData.email} onChange={handleChange}
-                className="w-full bg-white/[0.02] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-white/30 focus:bg-white/[0.05] transition-all"
-              />
-            </div>
-            <div>
-              <label className="block text-[11px] font-medium text-zinc-400 mb-1.5 ml-1">Téléphone</label>
-              <input 
-                type="tel" name="phone" value={formData.phone} onChange={handleChange}
-                className="w-full bg-white/[0.02] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-white/30 focus:bg-white/[0.05] transition-all"
-              />
-            </div>
-            <div>
-              <label className="block text-[11px] font-medium text-zinc-400 mb-1.5 ml-1">Site Web</label>
-              <input 
-                type="url" name="website" value={formData.website} onChange={handleChange}
-                className="w-full bg-white/[0.02] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-white/30 focus:bg-white/[0.05] transition-all"
-              />
-            </div>
-            <div>
-              <label className="block text-[11px] font-medium text-zinc-400 mb-1.5 ml-1">Adresse</label>
-              <input 
-                type="text" name="location" value={formData.location} onChange={handleChange}
-                className="w-full bg-white/[0.02] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-white/30 focus:bg-white/[0.05] transition-all"
-              />
-            </div>
-          </div>
-        </section>
-
-        <section className="space-y-4 pt-6 border-t border-white/5">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xs font-semibold uppercase tracking-widest text-zinc-500">Réseaux, Liens & Infos (Icones 3D)</h2>
-            <button onClick={addSocialLink} className="p-1.5 bg-white/5 hover:bg-white/10 rounded-lg transition-colors text-zinc-300">
-              <Plus size={16} />
-            </button>
-          </div>
-          <div className="space-y-3">
-            {formData.socialLinks.map((link, index) => (
-              <div key={link.id} className="flex gap-2 items-start">
-                <div className="w-1/3">
-                  <input 
-                    type="text"
-                    placeholder="Nom/Icone"
-                    value={link.platform} 
-                    onChange={(e) => updateSocialLink(link.id, "platform", e.target.value)}
-                    className="w-full bg-white/[0.02] border border-white/10 rounded-xl px-3 py-3 text-sm text-white focus:outline-none focus:border-white/30 focus:bg-white/[0.05] transition-all"
-                  />
-                </div>
-                <div className="flex-1 flex gap-2">
-                  <input 
-                    type="text" 
-                    placeholder="URL ou Texte (ex: Adresse)" 
-                    value={link.url} 
-                    onChange={(e) => updateSocialLink(link.id, "url", e.target.value)}
-                    className="w-full bg-white/[0.02] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-white/30 focus:bg-white/[0.05] transition-all"
-                  />
-                  <button onClick={() => removeSocialLink(link.id)} className="p-3 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-xl transition-colors border border-red-500/10">
-                    <Trash2 size={16} />
-                  </button>
-                </div>
-              </div>
-            ))}
-            {formData.socialLinks.length === 0 && (
-              <p className="text-[11px] text-zinc-500 italic text-center py-2">Aucun lien ajouté.</p>
-            )}
-          </div>
-        </section>
-
-        {formData.layout === 'agenda-jour' && (
-          <section className="space-y-4 pt-6 border-t border-white/5">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xs font-semibold uppercase tracking-widest text-zinc-500">Programme de la journée</h2>
-              <button onClick={addScheduleItem} className="p-1.5 bg-white/5 hover:bg-white/10 rounded-lg transition-colors text-zinc-300">
-                <Plus size={16} />
-              </button>
-            </div>
-            <div className="space-y-3">
-              {formData.scheduleData.map((item) => (
-                <div key={item.id} className="flex gap-2 items-start bg-white/[0.02] p-3 rounded-xl border border-white/10">
-                  <div className="w-1/4">
-                    <input 
-                      type="text" 
-                      placeholder="Heure" 
-                      value={item.time} 
-                      onChange={(e) => updateScheduleItem(item.id, "time", e.target.value)}
-                      className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-white/30 transition-all"
-                    />
-                  </div>
-                  <div className="flex-1 flex gap-2">
-                    <input 
-                      type="text" 
-                      placeholder="Tâche" 
-                      value={item.task} 
-                      onChange={(e) => updateScheduleItem(item.id, "task", e.target.value)}
-                      className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-white/30 transition-all"
-                    />
-                    <button onClick={() => removeScheduleItem(item.id)} className="p-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-lg transition-colors border border-red-500/10">
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-        
-        {formData.layout === 'agenda-semaine' && (
-          <section className="space-y-4 pt-6 border-t border-white/5">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xs font-semibold uppercase tracking-widest text-zinc-500">Programme de la semaine</h2>
-              <button onClick={addEventItem} className="p-1.5 bg-white/5 hover:bg-white/10 rounded-lg transition-colors text-zinc-300">
-                <Plus size={16} />
-              </button>
-            </div>
-            <div className="space-y-4">
-              {formData.eventData.map((item) => (
-                <div key={item.id} className="space-y-2 bg-white/[0.02] p-4 rounded-xl border border-white/10">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-xs font-semibold text-zinc-400">Événement</span>
-                    <button onClick={() => removeEventItem(item.id)} className="p-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-lg transition-colors">
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <input type="text" placeholder="Jour (ex: JEU.)" value={item.day} onChange={(e) => updateEventItem(item.id, "day", e.target.value)} className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none" />
-                    <input type="text" placeholder="Date (ex: 05)" value={item.date} onChange={(e) => updateEventItem(item.id, "date", e.target.value)} className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none" />
-                  </div>
-                  <input type="text" placeholder="Titre" value={item.title} onChange={(e) => updateEventItem(item.id, "title", e.target.value)} className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none" />
-                  <div className="grid grid-cols-2 gap-2">
-                    <input type="text" placeholder="Lieu" value={item.location} onChange={(e) => updateEventItem(item.id, "location", e.target.value)} className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none" />
-                    <input type="text" placeholder="Heure" value={item.time} onChange={(e) => updateEventItem(item.id, "time", e.target.value)} className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none" />
-                  </div>
-                  <textarea placeholder="Description" value={item.desc} onChange={(e) => updateEventItem(item.id, "desc", e.target.value)} rows={2} className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none resize-none" />
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-        
-        {formData.layout.startsWith('yoga') && (
-          <section className="space-y-4 pt-6 border-t border-white/5">
-            <h2 className="text-xs font-semibold uppercase tracking-widest text-zinc-500 mb-4">Infos Yoga</h2>
-            <div className="space-y-3">
-              <input type="text" placeholder="Titre (ex: YOGA, Sunday Schedule)" value={formData.yoga.title} onChange={(e) => setFormData(prev => ({...prev, yoga: {...prev.yoga, title: e.target.value}}))} className="w-full bg-white/[0.02] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none" />
-              <input type="text" placeholder="Sous-titre (ex: Nouveau cours)" value={formData.yoga.subtitle} onChange={(e) => setFormData(prev => ({...prev, yoga: {...prev.yoga, subtitle: e.target.value}}))} className="w-full bg-white/[0.02] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none" />
-              <input type="text" placeholder="Bouton (ex: BOOK NOW)" value={formData.yoga.buttonText} onChange={(e) => setFormData(prev => ({...prev, yoga: {...prev.yoga, buttonText: e.target.value}}))} className="w-full bg-white/[0.02] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none" />
-              <p className="text-xs text-zinc-500 mt-2 mb-1">Pour éditer le programme, basculez sur Agenda Jour/Semaine temporairement ou utilisez le code de l'application réelle. (Simplifié pour la démo)</p>
-            </div>
-          </section>
-        )}
-        
-        {formData.layout.startsWith('immo') && (
-          <section className="space-y-4 pt-6 border-t border-white/5">
-            <h2 className="text-xs font-semibold uppercase tracking-widest text-zinc-500 mb-4">Infos Immobilier</h2>
-            <div className="space-y-3">
-              <input type="text" placeholder="Statut (ex: À VENDRE)" value={formData.realEstate.status} onChange={(e) => setFormData(prev => ({...prev, realEstate: {...prev.realEstate, status: e.target.value}}))} className="w-full bg-white/[0.02] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none" />
-              <input type="text" placeholder="Prix (ex: $2.000.000)" value={formData.realEstate.price} onChange={(e) => setFormData(prev => ({...prev, realEstate: {...prev.realEstate, price: e.target.value}}))} className="w-full bg-white/[0.02] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none" />
-              <input type="text" placeholder="Réduction (ex: 30%)" value={formData.realEstate.discount} onChange={(e) => setFormData(prev => ({...prev, realEstate: {...prev.realEstate, discount: e.target.value}}))} className="w-full bg-white/[0.02] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none" />
-            </div>
-
-            <div className="pt-4 border-t border-white/5 mt-4">
-              <h2 className="text-xs font-semibold uppercase tracking-widest text-zinc-500 mb-4">Caractéristiques (Séparées par virgule)</h2>
-              <input 
-                type="text" 
-                placeholder="Ex: Easy Access, Private Pool, Fitness Center..." 
-                value={formData.realEstate.features.join(", ")} 
-                onChange={(e) => {
-                  const feats = e.target.value.split(",").map(f => f.trim()).filter(f => f);
-                  setFormData(prev => ({...prev, realEstate: {...prev.realEstate, features: feats}}));
-                }}
-                className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-white/30 transition-all"
-              />
-            </div>
-
-            <div className="pt-4 border-t border-white/5 mt-4">
-              <h2 className="text-xs font-semibold uppercase tracking-widest text-zinc-500 mb-4">Galerie (4 Images)</h2>
-              <div className="space-y-3">
-                {formData.realEstate.rooms.map((room: any, idx: number) => (
-                  <div key={idx} className="flex gap-2 items-start bg-white/[0.02] p-3 rounded-xl border border-white/10">
-                    <div className="w-1/3">
-                      <input 
-                        type="text" 
-                        placeholder="Pièce" 
-                        value={room.name} 
-                        onChange={(e) => {
-                          const newRooms = [...formData.realEstate.rooms];
-                          newRooms[idx] = { ...newRooms[idx], name: e.target.value };
-                          setFormData(prev => ({...prev, realEstate: {...prev.realEstate, rooms: newRooms}}));
-                        }}
-                        className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-white/30 transition-all"
-                      />
-                    </div>
-                    <div className="flex-1">
-                      <label className="w-full cursor-pointer border border-dashed border-white/20 hover:border-white/40 bg-black/20 rounded-lg px-3 py-2 text-sm text-zinc-400 flex items-center justify-center gap-2 transition-colors">
-                        <UploadCloud size={16} />
-                        <span className="truncate">{room.img.startsWith('blob:') ? 'Image chargée' : 'Importer image'}</span>
-                        <input 
-                          type="file" 
-                          accept="image/*"
-                          className="hidden"
-                          onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (file) {
-                              const url = URL.createObjectURL(file);
-                              const newRooms = [...formData.realEstate.rooms];
-                              newRooms[idx] = { ...newRooms[idx], img: url };
-                              setFormData(prev => ({...prev, realEstate: {...prev.realEstate, rooms: newRooms}}));
-                            }
-                          }}
-                        />
-                      </label>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </section>
-        )}
-        
-        <section className="space-y-4 pt-6 border-t border-white/5">
-          <h2 className="text-xs font-semibold uppercase tracking-widest text-zinc-500">Structure</h2>
-          <LayoutSelector />
-        </section>
-
-        <section className="space-y-4 pt-6 border-t border-white/5">
-          <h2 className="text-xs font-semibold uppercase tracking-widest text-zinc-500">Mode UI</h2>
-          <ModeSelector />
-        </section>
-        
-        <section className="space-y-4 pt-6 border-t border-white/5 pb-8">
-          <h2 className="text-xs font-semibold uppercase tracking-widest text-zinc-500">Thème</h2>
-          <ThemeSelector />
-        </section>
-      </div>
-
-      <div className="hidden md:flex p-4 md:p-6 border-t border-white/10 bg-black/80 backdrop-blur-md">
-        <Link href="/register" className="group w-full bg-white text-black py-4 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 hover:bg-zinc-200 transition-all shadow-lg shadow-white/10 hover:shadow-white/20">
-          <Save size={18} className="group-hover:scale-110 transition-transform" />
-          Créer ma vCard Premium
-        </Link>
-      </div>
-    </motion.div>
-  );
-
-  const PreviewPanel = () => {
-    const isLight = formData.mode === 'light';
-    return (
-    <motion.div 
-      initial={{ opacity: 0, x: 20 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: 20 }}
-      className="w-full md:w-1/2 lg:w-7/12 h-full flex items-center justify-center bg-[#050505] md:bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] md:from-zinc-900/50 md:via-[#050505] md:to-[#050505] relative overflow-y-auto perspective-1000"
-    >
-      <motion.div 
-        initial={{ y: -20, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ delay: 0.2 }}
-        className="hidden md:flex absolute top-6 items-center gap-2 bg-white/5 border border-white/10 px-4 py-2 rounded-full text-xs font-medium text-zinc-300 backdrop-blur-sm z-20"
-      >
-        <Smartphone size={14} className="animate-pulse" />
-        Aperçu en direct
-      </motion.div>
-
-      {/* Settings Button Floating on Preview (Mobile & Desktop) */}
-      <motion.button
-        whileHover={{ scale: 1.1 }}
-        whileTap={{ scale: 0.9 }}
-        onClick={() => setIsSettingsOpen(true)}
-        className={`absolute bottom-6 right-6 md:bottom-8 md:right-8 z-30 p-2 rounded-full backdrop-blur-xl shadow-2xl transition-colors group border ${isLight ? 'bg-white/60 border-zinc-200 hover:bg-white/90' : 'bg-black/60 border-white/10 hover:bg-white/10'}`}
-      >
-        <img width="40" height="40" src="https://img.icons8.com/nolan/64/settings--v1.png" alt="settings--v1" className="animate-[spin_4s_linear_infinite] group-hover:animate-[spin_1s_linear_infinite]" />
-      </motion.button>
-
-      {/* Mobile Frame */}
-      <motion.div 
-        className={`w-full h-full md:w-[360px] md:h-[740px] ${isLight ? 'bg-zinc-50 border-zinc-200' : 'bg-zinc-950 border-zinc-900'} md:rounded-[3rem] md:border-[8px] shadow-2xl relative flex flex-col pb-24 md:pb-0`}
-        style={{ 
-          boxShadow: `0 25px 50px -12px ${formData.theme.shadow}`,
-          background: formData.layout === 'glass' ? formData.theme.gradient : undefined
-
-        }}
-      >
-        <div className="hidden md:flex absolute top-0 w-full justify-center z-20">
-          <div className={`w-1/3 h-6 ${isLight ? 'bg-zinc-200' : 'bg-zinc-900'} rounded-b-2xl`}></div>
-        </div>
-
-        {/* Global VCard Language Switcher */}
-        <div className="absolute top-4 right-4 z-[60]">
-          <LanguageSwitcher />
-        </div>
-
-        <div className={`flex-1 overflow-y-auto scrollbar-hide md:overflow-hidden md:rounded-[calc(3rem-8px)] ${formData.layout === 'glass' ? '' : isLight ? 'bg-zinc-50' : 'bg-[#09090b]'}`}>
-          {formData.layout === 'pro-v1' && <BusinessCardV1 data={formData} />}
-          {formData.layout === 'pro-v2' && <BusinessCardV2 data={formData} />}
-          {formData.layout === 'agenda-jour' && <DailySchedule data={formData} />}
-          {formData.layout === 'agenda-semaine' && <WeeklyEvents data={formData} />}
-          {formData.layout === 'yoga-poster' && <YogaPoster data={formData} />}
-          {formData.layout === 'yoga-schedule' && <YogaSchedule data={formData} />}
-          {formData.layout === 'immo-simple' && <RealEstateSimple data={formData} />}
-          {formData.layout === 'immo-modern' && <RealEstateModern data={formData} />}
-          {formData.layout === 'immo-grid' && <RealEstateGrid data={formData} />}
-          {formData.layout === 'pro-v3' && <BusinessCardV3 data={formData} />}
-          {formData.layout === 'pro-v4' && <BusinessCardV4 data={formData} />}
-          {formData.layout === 'event-gradient' && <EventFlyerV1 data={formData} />}
-          {formData.layout === 'event-retro' && <EventFlyerV2 data={formData} />}
-          
-          {formData.layout === 'structure-pro' && <BusinessCardStructure data={formData} />}
-          {formData.layout === 'classic-pro' && <BusinessCardClassic data={formData} />}
-          {formData.layout === 'wave-pro' && <BusinessCardWave data={formData} />}
-          {formData.layout === 'glass-pro' && <BusinessCardGlass data={formData} />}
-          {formData.layout === 'freelance-pro' && <BusinessCardFreelance data={formData} />}
-          
-          {formData.layout === 'link-tree' && <LinkInBioTree data={formData} />}
-          {formData.layout === 'link-beacons' && <LinkInBioBeacons data={formData} />}
-          {formData.layout === 'link-biosites' && <LinkInBioSites data={formData} />}
-          
-          {['classic', 'wave', 'glass', 'minimal', 'brutal'].includes(formData.layout) && (
-            <>
-          
-          {/* Header Cover */}
-          {formData.layout !== 'glass' && (
-            <div 
-              className={`w-full relative transition-all duration-700 ease-in-out overflow-hidden ${formData.layout === 'wave' ? 'h-56' : 'h-48'}`}
-              style={{ background: formData.theme.gradient }}
-            >
-              {formData.coverUrl && (
-                <img src={formData.coverUrl} className="absolute inset-0 w-full h-full object-cover opacity-90 transition-opacity duration-500" alt="Cover" />
-              )}
-              <div className="absolute inset-0 bg-black/20" />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#09090b] via-transparent to-transparent opacity-50"></div>
-              {/* Decorative circles */}
-              <div className="absolute -top-10 -right-10 w-32 h-32 rounded-full bg-white/10 blur-2xl"></div>
-              <div className="absolute top-10 -left-10 w-24 h-24 rounded-full bg-white/10 blur-xl"></div>
-              
-              {formData.layout === 'wave' && (
-                <svg className="absolute bottom-0 w-full h-16 pointer-events-none" preserveAspectRatio="none" viewBox="0 0 1440 320" style={{ fill: isLight ? '#fafafa' : '#09090b' }}>
-                  <path d="M0,128L48,133.3C96,139,192,149,288,144C384,139,480,117,576,122.7C672,128,768,160,864,160C960,160,1056,128,1152,117.3C1248,107,1344,117,1392,122.7L1440,128L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
-                </svg>
-              )}
-            </div>
-          )}
-          
-          <div className={`px-6 relative z-10 flex flex-col items-center text-center ${formData.layout === 'glass' ? 'pt-24' : '-mt-20'}`}>
-            
-            {/* Avatar */}
-            <motion.div 
-              whileHover={{ scale: 1.05 }}
-              className={`w-32 h-32 rounded-full border-4 mb-5 flex items-center justify-center text-5xl font-bold shadow-2xl overflow-hidden relative group ${formData.layout === 'glass' ? 'bg-white/10 border-white/20 backdrop-blur-md text-white' : isLight ? 'bg-white border-zinc-50 text-zinc-300' : 'bg-zinc-900 border-[#09090b] text-zinc-500'}`}
-            >
-              {formData.avatarUrl ? (
-                <img src={formData.avatarUrl} alt="Avatar" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
-              ) : (
-                <span className="group-hover:scale-110 transition-transform">{formData.name.charAt(0) || '👤'}</span>
-              )}
-              <div className="absolute inset-0 rounded-full ring-inset ring-2 ring-white/10"></div>
-            </motion.div>
-
-            {/* User Details */}
-            <h2 className={`text-3xl font-bold tracking-tight mb-1.5 ${formData.layout === 'glass' ? 'text-white' : isLight ? 'text-zinc-900' : 'text-white'}`}>{formData.name || 'Votre Nom'}</h2>
-            <p className={`text-base font-semibold mb-1.5 transition-colors duration-700 bg-clip-text text-transparent ${formData.layout === 'glass' ? '!text-white drop-shadow-md' : ''}`} style={{ backgroundImage: formData.layout === 'glass' ? 'none' : formData.theme.gradient }}>
-              {formData.role || 'Votre Rôle'}
-            </p>
-            <p className={`text-sm mb-6 font-medium ${formData.layout === 'glass' ? 'text-white/80' : isLight ? 'text-zinc-500' : 'text-zinc-500'}`}>{formData.company || 'Votre Entreprise'}</p>
-            
-            <p className={`text-sm leading-relaxed mb-8 px-2 font-light ${formData.layout === 'glass' ? 'text-white/90 drop-shadow-sm' : isLight ? 'text-zinc-600' : 'text-zinc-300'}`}>
-              {formData.bio || 'Votre biographie courte apparaîtra ici...'}
-            </p>
-
-            {/* Action Buttons */}
-            <div className="w-full grid grid-cols-2 gap-3 mb-8">
-              <motion.button 
-                whileHover={{ scale: 1.02, y: -2 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={handleDownloadVCF}
-                className="py-3.5 rounded-2xl text-sm font-bold flex justify-center items-center gap-2 text-white shadow-[inset_0_2px_4px_rgba(255,255,255,0.4),0_10px_20px_rgba(0,0,0,0.5)] transition-all relative overflow-hidden group" 
-                style={{ background: formData.theme.gradient }}
-              >
-                <div className="absolute inset-0 bg-gradient-to-b from-white/30 to-transparent opacity-80 group-hover:opacity-100 transition-opacity"></div>
-                <Save size={18} className="relative z-10 drop-shadow-md" />
-                <span className="relative z-10 drop-shadow-md tracking-wide">{t("save_button") || "Enregistrer"}</span>
-              </motion.button>
-              <motion.button 
-                whileHover={{ scale: 1.02, y: -2 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={handleShare}
-                className={`py-3.5 border rounded-2xl text-sm font-bold flex justify-center items-center gap-2 transition-all backdrop-blur-xl shadow-[inset_0_2px_4px_rgba(255,255,255,0.1),0_10px_20px_rgba(0,0,0,0.4)] relative overflow-hidden group ${isLight ? 'bg-white/80 border-zinc-200 text-zinc-900' : 'bg-zinc-900/80 border-white/10 text-white'}`}
-              >
-                <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent opacity-50 group-hover:opacity-100 transition-opacity"></div>
-                <Share2 size={18} className={`relative z-10 transition-colors ${isLight ? 'text-zinc-600 group-hover:text-zinc-900' : 'text-zinc-300 group-hover:text-white'}`} />
-                <span className={`relative z-10 transition-colors tracking-wide ${isLight ? 'text-zinc-600 group-hover:text-zinc-900' : 'text-zinc-300 group-hover:text-white'}`}>{t("share") || "Partager"}</span>
-              </motion.button>
-            </div>
-
-            <div className="w-full space-y-3">
-              {[
-                { icon: '✉️', label: t("email") || 'Email', value: formData.email, href: `mailto:${formData.email}` },
-                { icon: '📱', label: t("phone") || 'Téléphone', value: formData.phone, href: `tel:${formData.phone}` },
-                { icon: '🌐', label: t("website") || 'Site', value: formData.website, href: formData.website },
-                { icon: '📍', label: t("address") || 'Adresse', value: formData.location, href: `https://maps.google.com/?q=${encodeURIComponent(formData.location)}` }
-              ].filter(item => item.value).map((item, idx) => (
-                <motion.a 
-                  href={item.href}
-                  target={item.href.startsWith('http') ? '_blank' : undefined}
-                  rel="noopener noreferrer"
-                  key={idx}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.1 * idx }}
-                  whileHover={{ scale: 1.02, x: 4 }}
-                  className={`flex items-center gap-4 p-4 rounded-3xl border backdrop-blur-xl cursor-pointer group shadow-[0_4px_20px_rgba(0,0,0,0.2)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.4)] transition-all ${formData.layout === 'glass' ? 'bg-black/20 border-white/20' : isLight ? 'bg-white border-zinc-100' : 'bg-white/[0.02] border-white/5'}`}
-                >
-                  {/* 3D Glossy Icon Container */}
-                  <div 
-                    className="w-14 h-14 rounded-2xl flex items-center justify-center text-white transition-all duration-500 shadow-[inset_0_4px_6px_rgba(255,255,255,0.4),inset_0_-4px_6px_rgba(0,0,0,0.2),0_8px_16px_rgba(0,0,0,0.5)] group-hover:rotate-6 group-hover:-translate-y-1 relative overflow-hidden" 
-                    style={{ background: formData.layout === 'glass' ? 'rgba(255,255,255,0.1)' : formData.theme.bg }}
-                  >
-                    <div className="absolute inset-0 bg-gradient-to-br from-white/60 via-white/10 to-transparent mix-blend-overlay"></div>
-                    <span className="text-2xl drop-shadow-xl relative z-10 group-hover:scale-110 transition-transform">{item.icon}</span>
-                  </div>
-                  <div className="flex-1 text-left">
-                    <p className={`text-[10px] uppercase tracking-widest font-extrabold mb-1 ${formData.layout === 'glass' ? 'text-white/60' : isLight ? 'text-zinc-400' : 'text-zinc-500'}`}>{item.label}</p>
-                    <p className={`text-sm font-semibold transition-colors drop-shadow-sm truncate ${formData.layout === 'glass' ? 'text-white group-hover:text-white' : isLight ? 'text-zinc-800 group-hover:text-zinc-900' : 'text-zinc-200 group-hover:text-white'}`}>{item.value}</p>
-                  </div>
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${formData.layout === 'glass' ? 'bg-white/20 text-white group-hover:bg-white/30' : isLight ? 'bg-zinc-100 text-zinc-400 group-hover:bg-zinc-200 group-hover:text-zinc-700' : 'bg-white/5 text-zinc-500 group-hover:bg-white/10 group-hover:text-white'}`}>
-                    <Share2 size={12} />
-                  </div>
-                </motion.a>
-              ))}
-            </div>
-
-            {/* Social Links Icons */}
-            {formData.socialLinks.length > 0 && (
-              <div className="flex flex-wrap justify-center gap-3 mt-6">
-                {formData.socialLinks.filter(l => l.url).map((link, idx) => (
-                  <motion.a
-                    key={link.id}
-                    href={link.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    initial={{ opacity: 0, scale: 0.5 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 0.1 * idx }}
-                    whileHover={{ scale: 1.1, y: -4 }}
-                    whileTap={{ scale: 0.9 }}
-                    className={`w-12 h-12 rounded-full flex items-center justify-center transition-all border backdrop-blur-md shadow-lg group ${formData.layout === 'glass' ? 'bg-white/10 border-white/20 text-white hover:bg-white/20' : isLight ? 'bg-white border-zinc-200 text-zinc-600 hover:text-zinc-900 hover:border-zinc-300' : 'bg-white/5 border-white/10 text-zinc-300 hover:text-white hover:bg-white/10'}`}
-                    style={formData.layout !== 'glass' && !isLight ? { background: formData.theme.bg, borderColor: 'transparent' } : undefined}
-                  >
-                    <span className="drop-shadow-md group-hover:scale-110 transition-transform">{getPlatformIcon(link.platform)}</span>
-                  </motion.a>
-                ))}
-              </div>
-            )}
-
-            {/* QR Code Section */}
-            <motion.div 
-              whileHover={{ scale: 1.02 }}
-              className={`mt-10 mb-10 w-full p-8 border rounded-3xl flex flex-col items-center backdrop-blur-xl relative overflow-hidden group ${isLight ? 'bg-white/80 border-zinc-200' : 'bg-white/5 border-white/10'}`}
-            >
-              <div className="absolute inset-0 opacity-20 transition-opacity duration-700 group-hover:opacity-40" style={{ background: formData.theme.gradient }}></div>
-              <div className="relative z-10 p-4 bg-white rounded-2xl shadow-xl">
-                <QRCodeSVG 
-                  value={formData.website || formData.email || "https://vcard.pro"} 
-                  size={150} fgColor="#000000" bgColor="#ffffff" level="Q"
-                />
-              </div>
-              <p className={`relative z-10 text-[11px] font-bold mt-5 uppercase tracking-widest flex items-center gap-2 ${isLight ? 'text-zinc-500' : 'text-zinc-300'}`}>
-                {t("scan_profile") || "Scanner le profil"} <span className="animate-bounce">↓</span>
-              </p>
-            </motion.div>
-
-          </div>
-          </>)}
-        </div>
-      </motion.div>
-
-      {/* Settings Drawer Overlay */}
-      <AnimatePresence>
-        {isSettingsOpen && (
-          <>
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setIsSettingsOpen(false)}
-              className="absolute inset-0 z-40 bg-transparent"
-            />
-            <motion.div
-              initial={{ y: "100%" }}
-              animate={{ y: 0 }}
-              exit={{ y: "100%" }}
-              transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              className="absolute bottom-0 left-0 w-full bg-[#0a0a0a]/95 backdrop-blur-2xl border-t border-white/10 rounded-t-3xl p-6 z-50 shadow-2xl max-h-[60vh] overflow-y-auto scrollbar-hide"
-            >
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-bold text-white">Personnaliser</h3>
-                <button onClick={() => setIsSettingsOpen(false)} className="p-2 bg-white/5 hover:bg-white/10 rounded-full transition-colors text-zinc-400 hover:text-white">
-                  <X size={20} />
-                </button>
-              </div>
-              <div className="mb-6">
-                <p className="text-xs font-semibold uppercase tracking-widest text-zinc-500 mb-4">Structure</p>
-                <LayoutSelector />
-              </div>
-              <div className="mb-6">
-                <p className="text-xs font-semibold uppercase tracking-widest text-zinc-500 mb-4">Mode UI</p>
-                <ModeSelector />
-              </div>
-              <div className="mb-8">
-                <p className="text-xs font-semibold uppercase tracking-widest text-zinc-500 mb-4">Thème & Couleurs</p>
-                <ThemeSelector />
-              </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
-    </motion.div>
-  );
+  const renderTemplatePreview = () => {
+    const props = { data: formData };
+    switch (formData.layout) {
+      case 'link-tree': return <LinkInBioTree {...props} />;
+      case 'link-beacons': return <LinkInBioBeacons {...props} />;
+      case 'link-biosites': return <LinkInBioSites {...props} />;
+      case 'pro-v1': return <BusinessCardV1 {...props} />;
+      case 'pro-v2': return <BusinessCardV2 {...props} />;
+      case 'agenda-jour': return <DailySchedule {...props} />;
+      case 'agenda-semaine': return <WeeklyEvents {...props} />;
+      case 'yoga-poster': return <YogaPoster {...props} />;
+      case 'yoga-schedule': return <YogaSchedule {...props} />;
+      case 'immo-simple': return <RealEstateSimple {...props} />;
+      case 'immo-modern': return <RealEstateModern {...props} />;
+      case 'immo-grid': return <RealEstateGrid {...props} />;
+      case 'pro-v3': return <BusinessCardV3 {...props} />;
+      case 'pro-v4': return <BusinessCardV4 {...props} />;
+      case 'event-gradient': return <EventFlyerV1 {...props} />;
+      case 'event-retro': return <EventFlyerV2 {...props} />;
+      case 'structure-pro': return <BusinessCardStructure {...props} />;
+      case 'wave-pro': return <BusinessCardWave {...props} />;
+      case 'glass-pro': return <BusinessCardGlass {...props} />;
+      case 'freelance-pro': return <BusinessCardFreelance {...props} />;
+      case 'classic-pro':
+      default: return <BusinessCardClassic {...props} />;
+    }
   };
 
   return (
-    <div className="flex h-[100dvh] bg-[#050505] text-zinc-100 overflow-hidden font-sans">
+    <div className="flex h-[100dvh] w-full bg-[#050505] text-white overflow-hidden font-sans" dir={isRTL ? "rtl" : "ltr"}>
       
-      {/* Desktop Split View */}
-      <div className="hidden md:flex w-full h-full">
-        <EditorPanel />
-        <PreviewPanel />
-      </div>
-
-      {/* Mobile Tab View */}
-      <div className="md:hidden w-full h-full flex flex-col relative">
-        <AnimatePresence mode="wait">
-          {activeTab === "edit" ? <EditorPanel key="edit" /> : <PreviewPanel key="preview" />}
-        </AnimatePresence>
-
-        {/* Mobile Bottom Floating Nav (Glassmorphism) */}
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 p-1.5 bg-black/60 backdrop-blur-xl border border-white/10 rounded-full shadow-2xl">
-          <button 
-            onClick={() => setActiveTab("edit")}
-            className={`flex items-center gap-2 px-6 py-3 rounded-full text-sm font-semibold transition-all ${activeTab === "edit" ? "bg-white text-black shadow-lg" : "text-zinc-400 hover:text-white"}`}
-          >
-            <Edit3 size={18} />
-            <span>Éditer</span>
-          </button>
-          <button 
-            onClick={() => setActiveTab("preview")}
-            className={`flex items-center gap-2 px-6 py-3 rounded-full text-sm font-semibold transition-all ${activeTab === "preview" ? "bg-white text-black shadow-lg" : "text-zinc-400 hover:text-white"}`}
-          >
-            <Eye size={18} />
-            <span>Aperçu</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Login Required Modal */}
-      <AnimatePresence>
-        {showLoginModal && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[60]"
-              onClick={() => setShowLoginModal(false)}
-            />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
-              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-sm bg-[#111] border border-white/10 rounded-2xl p-8 z-[70] shadow-2xl flex flex-col items-center text-center"
-            >
-              <div className="w-16 h-16 bg-blue-500/20 text-blue-400 rounded-2xl flex items-center justify-center mb-4">
-                <span className="text-3xl">🔐</span>
-              </div>
-              <h2 className="text-xl font-bold mb-2">Connexion requise</h2>
-              <p className="text-zinc-400 text-sm mb-6">Créez un compte gratuit pour publier votre vCard avec votre URL personnalisée.</p>
-              <div className="flex flex-col gap-3 w-full">
-                <a href="/register" className="w-full py-3.5 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-bold text-sm hover:opacity-90 transition-all shadow-lg shadow-blue-500/20">
-                  Créer mon compte ⚡
-                </a>
-                <a href="/login" className="w-full py-3 bg-white/5 hover:bg-white/10 border border-white/10 text-zinc-300 rounded-xl font-bold text-sm transition-colors">
-                  Se connecter
-                </a>
-              </div>
-              <button onClick={() => setShowLoginModal(false)} className="absolute top-4 right-4 text-zinc-500 hover:text-white"><X size={20} /></button>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
-
-      {/* Publish Success Modal */}
+      {/* SUCCESS MODAL - PRO MAX */}
       <AnimatePresence>
         {publishedSlug && (
-          <>
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-xl p-4">
             <motion.div
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60]"
-              onClick={() => setPublishedSlug(null)}
-            />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
-              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-[#111] border border-white/10 rounded-2xl p-6 z-[70] shadow-2xl flex flex-col items-center text-center"
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-[#111] border border-white/10 p-8 rounded-3xl max-w-sm w-full text-center shadow-2xl flex flex-col items-center"
             >
-              <div className="w-16 h-16 bg-green-500/20 text-green-400 rounded-2xl flex items-center justify-center mb-4">
-                <CheckCircle2 size={32} />
+              <div className="w-20 h-20 rounded-full bg-emerald-500/20 flex items-center justify-center mb-6 border border-emerald-500/30">
+                <CheckCircle2 size={40} className="text-emerald-400" />
               </div>
-              <h2 className="text-2xl font-bold mb-2">vCard Publiée ! 🎉</h2>
-              <p className="text-zinc-400 text-sm mb-6">Votre carte digitale est en ligne. Partagez votre lien professionnel :</p>
-
-              {/* Primary URL — profile page */}
-              {publishedUsername && (
-                <div className="w-full mb-3">
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-blue-400 mb-2 text-left">🌐 Page Profil (recommandé)</p>
-                  <div className="flex items-center gap-2 bg-blue-600/10 border border-blue-500/20 rounded-xl p-3">
-                    <LinkIcon size={14} className="text-blue-400 flex-shrink-0" />
-                    <input
-                      type="text"
-                      readOnly
-                      value={`${typeof window !== 'undefined' ? window.location.origin : ''}/u/${publishedUsername}`}
-                      className="bg-transparent border-none outline-none w-full text-sm text-white font-mono min-w-0"
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* VCF direct download link */}
-              <div className="w-full mb-6">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-2 text-left">📥 Lien direct .vcf</p>
-                <div className="flex items-center gap-2 bg-black/40 border border-white/10 rounded-xl p-3">
-                  <LinkIcon size={14} className="text-zinc-500 flex-shrink-0" />
-                  <input
-                    type="text"
-                    readOnly
-                    value={`${typeof window !== 'undefined' ? window.location.origin : ''}/v/${publishedSlug}`}
-                    className="bg-transparent border-none outline-none w-full text-sm text-zinc-400 font-mono min-w-0"
-                  />
-                </div>
-              </div>
-
-              <div className="flex gap-3 w-full">
-                <button
-                  onClick={() => {
-                    const url = publishedUsername
-                      ? `${window.location.origin}/u/${publishedUsername}`
-                      : `${window.location.origin}/v/${publishedSlug}`;
-                    navigator.clipboard.writeText(url);
-                    alert('Lien copié !');
-                  }}
-                  className="flex-1 py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl font-bold transition-colors text-sm"
-                >
-                  📋 Copier
-                </button>
-                <a
+              <h2 className="text-2xl font-bold mb-2">{t("publish_success") || "Félicitations !"}</h2>
+              <p className="text-zinc-400 text-sm mb-8">
+                {t("vcard_is_live") || "Votre vCard est désormais en ligne et prête à être partagée."}
+              </p>
+              
+              <div className="flex flex-col w-full gap-3">
+                <Link
                   href={publishedUsername ? `/u/${publishedUsername}` : `/v/${publishedSlug}`}
-                  target="_blank"
-                  className="flex-1 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-bold transition-all hover:opacity-90 text-sm block"
+                  className="w-full flex items-center justify-center gap-2 py-4 bg-white text-black rounded-2xl font-bold text-sm hover:scale-105 active:scale-95 transition-transform"
                 >
-                  🚀 Ouvrir
-                </a>
+                  <Eye size={18} />
+                  {t("view_my_vcard") || "Voir ma vCard"}
+                </Link>
+                <Link
+                  href="/dashboard"
+                  className="w-full flex items-center justify-center gap-2 py-4 bg-white/5 border border-white/10 rounded-2xl text-white font-bold text-sm hover:bg-white/10 transition-colors"
+                >
+                  <LayoutDashboard size={18} />
+                  {t("go_to_dashboard") || "Aller au Dashboard"}
+                </Link>
               </div>
-
-              {publishedUsername && (
-                <a href="/dashboard" className="mt-4 text-xs text-zinc-500 hover:text-white transition-colors">
-                  Voir mon dashboard →
-                </a>
-              )}
-
-              <button onClick={() => { setPublishedSlug(null); setPublishedUsername(null); }} className="absolute top-4 right-4 text-zinc-500 hover:text-white">
-                <X size={20} />
-              </button>
             </motion.div>
-          </>
+          </div>
         )}
       </AnimatePresence>
+
+      {/* LOGIN REQUIRED MODAL */}
+      <AnimatePresence>
+        {showLoginModal && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-xl p-4">
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-[#111] border border-white/10 p-8 rounded-3xl max-w-sm w-full text-center shadow-2xl"
+            >
+              <h2 className="text-2xl font-bold mb-2">{t("login_required") || "Connexion requise"}</h2>
+              <p className="text-zinc-400 text-sm mb-8">
+                {t("login_to_publish") || "Vous devez être connecté pour publier et sauvegarder votre vCard."}
+              </p>
+              <div className="flex flex-col gap-3">
+                <Link href="/login" className="py-4 bg-white text-black rounded-xl font-bold text-sm">{t("login_action") || "Se connecter"}</Link>
+                <Link href="/register" className="py-4 bg-white/5 border border-white/10 rounded-xl font-bold text-sm text-white">{t("create_my_vcard") || "Créer un compte"}</Link>
+                <button onClick={() => setShowLoginModal(false)} className="mt-2 text-zinc-500 text-xs hover:text-white">{t("cancel") || "Annuler"}</button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* MOBILE TABS (Hidden on md+) */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 h-20 bg-black/80 backdrop-blur-xl border-t border-white/10 z-50 flex items-center justify-center gap-2 px-6">
+        <button
+          onClick={() => setActiveTab("edit")}
+          className={`flex-1 py-3 rounded-xl flex items-center justify-center gap-2 text-xs font-bold transition-all ${activeTab === "edit" ? "bg-white text-black" : "bg-white/5 text-zinc-400"}`}
+        >
+          <Edit3 size={16} /> Éditer
+        </button>
+        <button
+          onClick={() => setActiveTab("preview")}
+          className={`flex-1 py-3 rounded-xl flex items-center justify-center gap-2 text-xs font-bold transition-all ${activeTab === "preview" ? "bg-white text-black" : "bg-white/5 text-zinc-400"}`}
+        >
+          <Eye size={16} /> Aperçu
+        </button>
+      </div>
+
+      {/* LEFT PANEL - Editor (Pro Max UI) */}
+      <motion.div 
+        initial={{ opacity: 0, x: -20 }}
+        animate={{ opacity: 1, x: 0 }}
+        className={`w-full md:w-1/2 lg:w-[45%] h-full flex flex-col bg-[#050505] border-r border-white/10 z-10 ${activeTab === "edit" ? "flex" : "hidden md:flex"}`}
+      >
+        <div className="p-5 border-b border-white/10 flex items-center justify-between bg-black/40 backdrop-blur-md sticky top-0 z-20">
+          <div className="flex items-center gap-3">
+            <Link href="/" className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-xs shadow-lg">
+              V
+            </Link>
+            <div>
+              <h1 className="text-base font-bold text-white tracking-tight">{t('editor_title') || "Studio Créatif"}</h1>
+              <p className="text-[10px] text-zinc-400 font-medium">Édition en temps réel</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <Link href="/dashboard" className="p-2.5 bg-white/5 hover:bg-white/10 rounded-full transition-colors" title="Tableau de bord">
+              <Home size={16} className="text-zinc-300" />
+            </Link>
+            <LanguageSwitcher />
+            <button 
+              onClick={handlePublish}
+              disabled={isPublishing}
+              className="flex items-center gap-2 px-5 py-2.5 bg-white hover:bg-zinc-200 text-black rounded-full text-xs font-bold transition-all shadow-xl active:scale-95"
+            >
+              {isPublishing ? <div className="w-4 h-4 border-2 border-black/20 border-t-black rounded-full animate-spin"></div> : <UploadCloud size={16} />}
+              {t("publish") || "Publier"}
+            </button>
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-5 md:p-8 space-y-10 scrollbar-hide pb-32 md:pb-8">
+          
+          <section className="space-y-6">
+            <h2 className="text-[11px] font-bold uppercase tracking-widest text-zinc-500 flex items-center gap-2">
+              <Palette size={14} /> Design & Layout
+            </h2>
+            <LayoutSelector />
+            
+            <div className="pt-6 border-t border-white/5 space-y-4">
+              <h3 className="text-xs font-semibold text-zinc-400">{t("theme_color") || "Couleur du thème"}</h3>
+              <div className="flex flex-wrap gap-3">
+                {THEMES.slice(0, 8).map(theme => (
+                  <button 
+                    key={theme.id}
+                    onClick={() => setFormData(prev => ({ ...prev, theme }))}
+                    className={`w-10 h-10 rounded-full transition-all flex items-center justify-center ${formData.theme.id === theme.id ? 'ring-2 ring-white ring-offset-2 ring-offset-black' : 'opacity-70 hover:opacity-100 hover:scale-110'}`}
+                    style={{ background: theme.bg }}
+                  >
+                    {formData.theme.id === theme.id && <CheckCircle2 size={16} className="text-white drop-shadow-md" />}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="pt-6 border-t border-white/5 space-y-4">
+              <h3 className="text-xs font-semibold text-zinc-400">{t("mode") || "Mode d'affichage"}</h3>
+              <div className="flex gap-2 p-1 bg-white/5 rounded-xl border border-white/10">
+                {['dark', 'light'].map((mode) => (
+                  <button
+                    key={mode}
+                    onClick={() => setFormData(prev => ({ ...prev, mode }))}
+                    className={`flex-1 py-2.5 text-xs font-bold rounded-lg transition-all ${formData.mode === mode ? 'bg-white text-black shadow-md' : 'text-zinc-500 hover:text-white'}`}
+                  >
+                    {mode === 'dark' ? 'Nuit (Sombre)' : 'Jour (Clair)'}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          <section className="space-y-6 pt-8 border-t border-white/10">
+            <h2 className="text-[11px] font-bold uppercase tracking-widest text-zinc-500 flex items-center gap-2">
+              <User size={14} /> Profil & Contact
+            </h2>
+            
+            {/* PUBLIC URL / USERNAME INTEGRATION */}
+            <div className="p-4 bg-white/[0.02] border border-white/10 rounded-2xl mb-4">
+              <label className="block text-[11px] font-bold text-blue-400 mb-2 tracking-wider uppercase">
+                Identifiant (Lien de sous-domaine)
+              </label>
+              <div className="relative">
+                <LinkIcon size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
+                <input 
+                  type="text" 
+                  name="username" 
+                  value={formData.username} 
+                  onChange={handleChange} 
+                  className="w-full bg-black/50 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-sm text-white focus:outline-none focus:border-blue-500/50 focus:bg-white/[0.05] transition-all" 
+                  placeholder="votre-identifiant (ex: digitale4747)" 
+                />
+              </div>
+              <p className="text-[10px] text-zinc-500 mt-2">Ce lien sera utilisé pour votre profil public (ex: hosyardigital.com/u/votre-identifiant)</p>
+            </div>
+            
+            <div className="flex gap-4">
+              <div className="flex-1">
+                <label className="block text-[11px] font-medium text-zinc-400 mb-1.5 mx-1">{t('full_name') || "Nom complet"}</label>
+                <input type="text" name="name" value={formData.name} onChange={handleChange} className="w-full bg-white/[0.03] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-white/30 focus:bg-white/[0.06] transition-all" />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-[11px] font-medium text-zinc-400 mb-1.5 mx-1">{t('role') || "Poste"}</label>
+                <input type="text" name="role" value={formData.role} onChange={handleChange} className="w-full bg-white/[0.03] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-white/30 focus:bg-white/[0.06] transition-all" />
+              </div>
+              <div>
+                <label className="block text-[11px] font-medium text-zinc-400 mb-1.5 mx-1">{t('company') || "Entreprise"}</label>
+                <input type="text" name="company" value={formData.company} onChange={handleChange} className="w-full bg-white/[0.03] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-white/30 focus:bg-white/[0.06] transition-all" />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-medium text-zinc-400 mb-1.5 mx-1">{t('bio') || "Biographie"}</label>
+              <textarea name="bio" value={formData.bio} onChange={handleChange} rows={3} className="w-full bg-white/[0.03] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-white/30 focus:bg-white/[0.06] transition-all resize-none" />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-[11px] font-medium text-zinc-400 mb-1.5 ml-1">Email</label>
+                <input type="email" name="email" value={formData.email} onChange={handleChange} className="w-full bg-white/[0.03] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-white/30 focus:bg-white/[0.06] transition-all" />
+              </div>
+              <div>
+                <label className="block text-[11px] font-medium text-zinc-400 mb-1.5 ml-1">Téléphone</label>
+                <input type="tel" name="phone" value={formData.phone} onChange={handleChange} className="w-full bg-white/[0.03] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-white/30 focus:bg-white/[0.06] transition-all" />
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-[11px] font-medium text-zinc-400 mb-1.5 ml-1">Site Web</label>
+                <input type="url" name="website" value={formData.website} onChange={handleChange} className="w-full bg-white/[0.03] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-white/30 focus:bg-white/[0.06] transition-all" />
+              </div>
+              <div>
+                <label className="block text-[11px] font-medium text-zinc-400 mb-1.5 ml-1">Adresse</label>
+                <input type="text" name="location" value={formData.location} onChange={handleChange} className="w-full bg-white/[0.03] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-white/30 focus:bg-white/[0.06] transition-all" />
+              </div>
+            </div>
+          </section>
+
+          <section className="space-y-6 pt-8 border-t border-white/10">
+            <div className="flex items-center justify-between">
+              <h2 className="text-[11px] font-bold uppercase tracking-widest text-zinc-500 flex items-center gap-2">
+                <LinkIcon size={14} /> Réseaux & Liens
+              </h2>
+              <button onClick={addSocialLink} className="flex items-center gap-1 text-[10px] font-bold bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg transition-colors">
+                <Plus size={12} /> {t("add") || "Ajouter"}
+              </button>
+            </div>
+            <div className="space-y-3">
+              {formData.socialLinks.map((link) => (
+                <div key={link.id} className="flex gap-2 items-center bg-white/[0.02] border border-white/5 p-2 rounded-xl">
+                  <input type="text" placeholder="Nom/Icone" value={link.platform} onChange={(e) => updateSocialLink(link.id, "platform", e.target.value)} className="w-1/3 bg-transparent px-2 py-2 text-sm text-white focus:outline-none" />
+                  <div className="w-[1px] h-6 bg-white/10 mx-1" />
+                  <input type="text" placeholder="URL ou Texte" value={link.url} onChange={(e) => updateSocialLink(link.id, "url", e.target.value)} className="flex-1 bg-transparent px-2 py-2 text-sm text-white focus:outline-none" />
+                  <button onClick={() => removeSocialLink(link.id)} className="p-2 text-zinc-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors">
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {formData.layout === 'agenda-jour' && (
+            <section className="space-y-6 pt-8 border-t border-white/10">
+              <div className="flex items-center justify-between">
+                <h2 className="text-[11px] font-bold uppercase tracking-widest text-zinc-500 flex items-center gap-2">
+                  <Calendar size={14} /> Programme Journée
+                </h2>
+                <button onClick={addScheduleItem} className="flex items-center gap-1 text-[10px] font-bold bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg transition-colors">
+                  <Plus size={12} /> {t("add") || "Ajouter"}
+                </button>
+              </div>
+              <div className="space-y-3">
+                {formData.scheduleData.map((item) => (
+                  <div key={item.id} className="flex gap-2 items-center bg-white/[0.02] border border-white/5 p-2 rounded-xl">
+                    <input type="text" placeholder="Heure" value={item.time} onChange={(e) => updateScheduleItem(item.id, "time", e.target.value)} className="w-1/4 bg-transparent px-2 py-2 text-sm text-white focus:outline-none" />
+                    <div className="w-[1px] h-6 bg-white/10 mx-1" />
+                    <input type="text" placeholder="Tâche" value={item.task} onChange={(e) => updateScheduleItem(item.id, "task", e.target.value)} className="flex-1 bg-transparent px-2 py-2 text-sm text-white focus:outline-none" />
+                    <button onClick={() => removeScheduleItem(item.id)} className="p-2 text-zinc-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors">
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {formData.layout === 'agenda-semaine' && (
+            <section className="space-y-6 pt-8 border-t border-white/10">
+              <div className="flex items-center justify-between">
+                <h2 className="text-[11px] font-bold uppercase tracking-widest text-zinc-500 flex items-center gap-2">
+                  <Calendar size={14} /> Événements
+                </h2>
+                <button onClick={addEventItem} className="flex items-center gap-1 text-[10px] font-bold bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg transition-colors">
+                  <Plus size={12} /> {t("add") || "Ajouter"}
+                </button>
+              </div>
+              <div className="space-y-4">
+                {formData.eventData.map((item) => (
+                  <div key={item.id} className="space-y-2 bg-white/[0.02] p-4 rounded-xl border border-white/10">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-xs font-semibold text-zinc-400">Événement</span>
+                      <button onClick={() => removeEventItem(item.id)} className="p-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-lg transition-colors">
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <input type="text" placeholder="Jour (ex: JEU.)" value={item.day} onChange={(e) => updateEventItem(item.id, "day", e.target.value)} className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none" />
+                      <input type="text" placeholder="Date (ex: 05)" value={item.date} onChange={(e) => updateEventItem(item.id, "date", e.target.value)} className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none" />
+                    </div>
+                    <input type="text" placeholder="Titre" value={item.title} onChange={(e) => updateEventItem(item.id, "title", e.target.value)} className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none" />
+                    <div className="grid grid-cols-2 gap-2">
+                      <input type="text" placeholder="Lieu" value={item.location} onChange={(e) => updateEventItem(item.id, "location", e.target.value)} className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none" />
+                      <input type="text" placeholder="Heure" value={item.time} onChange={(e) => updateEventItem(item.id, "time", e.target.value)} className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none" />
+                    </div>
+                    <textarea placeholder="Description" value={item.desc} onChange={(e) => updateEventItem(item.id, "desc", e.target.value)} rows={2} className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none resize-none" />
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+        </div>
+      </motion.div>
+
+      {/* RIGHT PANEL - Preview */}
+      <div className={`flex-1 h-full bg-[#111] md:bg-[#0a0a0a] relative overflow-hidden flex flex-col items-center justify-center ${activeTab === "preview" ? "flex" : "hidden md:flex"}`}>
+        
+        {/* Background ambient lighting */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] opacity-20 blur-[100px] rounded-full transition-all duration-700" style={{ background: formData.theme.bg }} />
+        </div>
+
+        {/* Floating Tooltip Desktop */}
+        <div className="hidden md:flex absolute top-6 right-6 items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-full backdrop-blur-md text-xs font-semibold text-zinc-400 shadow-2xl">
+          <Smartphone size={14} />
+          {t("live_preview") || "Aperçu en direct"}
+        </div>
+
+        {/* Mobile Device Frame Desktop */}
+        <div className="relative w-full h-full md:h-[85vh] md:w-[390px] md:rounded-[45px] md:border-[8px] border-[#222] bg-[#050505] shadow-2xl overflow-hidden shadow-black/50 ring-1 ring-white/5 flex flex-col">
+          
+          {/* iOS Notch Mockup */}
+          <div className="hidden md:block absolute top-0 inset-x-0 h-6 z-50 pointer-events-none">
+            <div className="w-[120px] h-6 bg-[#222] mx-auto rounded-b-2xl relative">
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-4 bg-black rounded-full" />
+            </div>
+          </div>
+
+          <div className="flex-1 overflow-y-auto w-full h-full scrollbar-hide relative bg-[#050505]">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={formData.layout + formData.mode + formData.theme.id}
+                initial={{ opacity: 0, scale: 0.98 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.98 }}
+                transition={{ duration: 0.3 }}
+                className={`w-full min-h-full ${formData.mode === 'light' ? 'bg-white text-black' : ''}`}
+              >
+                {renderTemplatePreview()}
+              </motion.div>
+            </AnimatePresence>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
