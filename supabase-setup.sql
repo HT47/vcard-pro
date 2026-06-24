@@ -106,6 +106,36 @@ CREATE TRIGGER vcards_updated_at
   FOR EACH ROW EXECUTE FUNCTION public.update_updated_at();
 
 -- ============================================================
+-- 9. TRIGGER auto-creation profil utilisateur
+-- ============================================================
+CREATE OR REPLACE FUNCTION public.handle_new_user() 
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO public.profiles (id, username, display_name)
+  VALUES (
+    NEW.id,
+    'user_' || substr(NEW.id::text, 1, 8),
+    split_part(NEW.email, '@', 1)
+  );
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
+-- ============================================================
 -- VERIFICATION : Doit retourner 'profiles' et 'vcards'
 -- ============================================================
 SELECT tablename FROM pg_tables WHERE schemaname = 'public' AND tablename IN ('profiles', 'vcards');
+
+-- ============================================================
+-- BONUS: CONFIRMATION D'EMAIL MANUELLE (UTILE POUR DEV/TEST)
+-- ============================================================
+-- Si vous souhaitez confirmer automatiquement tous les utilisateurs existants 
+-- (utile pour résoudre l'erreur "Email not confirmed" de façon globale) :
+--
+-- UPDATE auth.users SET email_confirmed_at = NOW(), confirmed_at = NOW() WHERE email_confirmed_at IS NULL;
+

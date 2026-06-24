@@ -11,11 +11,14 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [resending, setResending] = useState(false);
+  const [resendSuccess, setResendSuccess] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
+    setResendSuccess(false);
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -26,6 +29,35 @@ export default function Login() {
     } else {
       window.location.href = "/dashboard";
     }
+  };
+
+  const handleResendConfirmation = async () => {
+    if (!email) return;
+    setResending(true);
+    setError(null);
+    setResendSuccess(false);
+    
+    const { error } = await supabase.auth.resend({
+      type: "signup",
+      email: email,
+    });
+    
+    setResending(false);
+    if (error) {
+      setError(error.message);
+    } else {
+      setResendSuccess(true);
+    }
+  };
+
+  const getErrorMessage = (msg: string) => {
+    if (msg.toLowerCase().includes("email not confirmed")) {
+      return t("error_email_not_confirmed") || "Email non confirmé. Veuillez vérifier votre boîte mail.";
+    }
+    if (msg.toLowerCase().includes("invalid login credentials")) {
+      return t("error_invalid_credentials") || "Identifiants de connexion invalides.";
+    }
+    return msg;
   };
 
   return (
@@ -44,7 +76,23 @@ export default function Login() {
         
         {error && (
           <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl text-sm text-center">
-            {error}
+            <div>{getErrorMessage(error)}</div>
+            {error.toLowerCase().includes("email not confirmed") && (
+              <button
+                type="button"
+                onClick={handleResendConfirmation}
+                disabled={resending}
+                className="mt-2 text-xs font-semibold text-white underline hover:text-zinc-300 focus:outline-none disabled:opacity-50"
+              >
+                {resending ? t("resending") || "Renvoi..." : t("resend_confirmation") || "Renvoyer le lien de confirmation"}
+              </button>
+            )}
+          </div>
+        )}
+
+        {resendSuccess && (
+          <div className="mb-4 p-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-xl text-sm text-center">
+            {t("resend_success") || "Lien de confirmation renvoyé ! Veuillez vérifier vos e-mails."}
           </div>
         )}
 

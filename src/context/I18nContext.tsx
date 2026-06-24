@@ -84,7 +84,7 @@ export const I18nProvider = ({ children }: { children: ReactNode }) => {
 
   // t() reads from latest translations synchronously
   const t = (key: string): string => {
-    return translations[key] || key;
+    return translations[key] || "";
   };
 
   const isRTL = rtlLocales.includes(locale);

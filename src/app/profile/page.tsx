@@ -53,8 +53,8 @@ export default function ProfilePage() {
       setSuccess(true);
       refetchProfile?.();
       setTimeout(() => setSuccess(false), 3000);
-    } else {
-      alert("Erreur : " + error.message);
+      } else {
+      alert((t("error") || "Erreur") + " : " + error.message);
     }
   };
 
@@ -108,14 +108,14 @@ export default function ProfilePage() {
 
           {success && (
             <div className="mb-4 p-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-xl text-sm text-center">
-              ✓ Profil mis à jour !
+              {t("profile_updated") || "✓ Profil mis à jour !"}
             </div>
           )}
 
           <form onSubmit={handleSave} className="space-y-4">
             {/* Username (readonly) */}
             <div className="space-y-1">
-              <label className="text-xs text-zinc-400 font-medium ml-1 uppercase tracking-wider">Identifiant (non modifiable)</label>
+              <label className="text-xs text-zinc-400 font-medium ml-1 uppercase tracking-wider">{t("username_readonly") || "Identifiant (non modifiable)"}</label>
               <div className="relative">
                 <User size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-600" />
                 <input
@@ -137,14 +137,14 @@ export default function ProfilePage() {
                   value={formData.display_name}
                   onChange={(e) => setFormData({ ...formData, display_name: e.target.value })}
                   className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-sm focus:outline-none focus:border-white/30 focus:bg-white/10 transition-all"
-                  placeholder="Jean Dupont"
+                  placeholder={t("name_placeholder") || "Jean Dupont"}
                 />
               </div>
             </div>
 
             {/* Email (readonly) */}
             <div className="space-y-1">
-              <label className="text-xs text-zinc-400 font-medium ml-1 uppercase tracking-wider">Email (non modifiable)</label>
+              <label className="text-xs text-zinc-400 font-medium ml-1 uppercase tracking-wider">{t("email_readonly") || "Email (non modifiable)"}</label>
               <div className="relative">
                 <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-600" />
                 <input
@@ -166,7 +166,7 @@ export default function ProfilePage() {
                   onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
                   rows={3}
                   className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-sm focus:outline-none focus:border-white/30 focus:bg-white/10 transition-all resize-none"
-                  placeholder="Une courte description de vous..."
+                  placeholder={t("bio_placeholder") || "Une courte description de vous..."}
                 />
               </div>
             </div>

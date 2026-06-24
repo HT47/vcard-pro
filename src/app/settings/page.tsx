@@ -1,15 +1,39 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useI18n } from "@/context/I18nContext";
-import { Globe, Moon, Bell, Shield, LogOut, ArrowLeft, Trash2, ChevronRight, User } from "lucide-react";
+import { Globe, Moon, Bell, Shield, LogOut, ArrowLeft, Trash2, ChevronRight, User, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 
+const KURDISH_FLAG = "https://upload.wikimedia.org/wikipedia/commons/thumb/3/35/Flag_of_Kurdistan.svg/40px-Flag_of_Kurdistan.svg.png";
+const getFlagUrl = (code: string) => `https://flagcdn.com/w40/${code}.png`;
+
+const languages = [
+  { code: "fr",         name: "Français",    flag: getFlagUrl("fr") },
+  { code: "en",         name: "English",     flag: getFlagUrl("gb") },
+  { code: "ar",         name: "العربية",     flag: getFlagUrl("sa") },
+  { code: "fa",         name: "فارسی",       flag: getFlagUrl("ir") },
+  { code: "ku-badini",  name: "بادینی",      flag: KURDISH_FLAG },
+  { code: "ku-hawrami", name: "هەورامانی",   flag: KURDISH_FLAG },
+  { code: "ckb",        name: "سۆرانی",      flag: KURDISH_FLAG },
+  { code: "ku",         name: "Kurmancî",    flag: KURDISH_FLAG },
+  { code: "es",         name: "Español",     flag: getFlagUrl("es") },
+  { code: "de",         name: "Deutsch",     flag: getFlagUrl("de") },
+  { code: "it",         name: "Italiano",    flag: getFlagUrl("it") },
+  { code: "sv",         name: "Svenska",     flag: getFlagUrl("se") },
+  { code: "no",         name: "Norsk",       flag: getFlagUrl("no") },
+  { code: "ru",         name: "Русский",     flag: getFlagUrl("ru") },
+  { code: "tr",         name: "Türkçe",      flag: getFlagUrl("tr") },
+  { code: "zh",         name: "中文",        flag: getFlagUrl("cn") },
+];
+
 export default function SettingsPage() {
   const { t, isRTL, locale, setLocale } = useI18n();
   const router = useRouter();
+  const [showLanguageModal, setShowLanguageModal] = useState(false);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -23,6 +47,8 @@ export default function SettingsPage() {
     if (!confirmed) return;
     alert(t('delete_account_contact') || "Contactez le support pour supprimer votre compte.");
   };
+
+  const currentLanguage = languages.find(l => l.code === locale) || languages[0];
 
   const SettingItem = ({ icon: Icon, label, value, onClick, danger = false }: {
     icon: React.ElementType;
@@ -72,12 +98,12 @@ export default function SettingsPage() {
               <SettingItem
                 icon={Globe}
                 label={t('language') || 'Langue'}
-                value={locale.toUpperCase()}
-                onClick={() => setLocale(locale === 'fr' ? 'en' : 'fr')}
+                value={currentLanguage.name}
+                onClick={() => setShowLanguageModal(true)}
               />
-              <SettingItem icon={Moon} label={t('theme') || 'Thème'} value="Dark" />
-              <SettingItem icon={Bell} label="Notifications" />
-              <SettingItem icon={Shield} label="Sécurité" />
+              <SettingItem icon={Moon} label={t('theme') || 'Thème'} value={t('theme_dark') || "Sombre"} />
+              <SettingItem icon={Bell} label={t('notifications') || "Notifications"} />
+              <SettingItem icon={Shield} label={t('security') || "Sécurité"} />
             </div>
           </section>
 
@@ -90,6 +116,67 @@ export default function SettingsPage() {
           </section>
         </div>
       </div>
+
+      {/* Language Selector Modal */}
+      <AnimatePresence>
+        {showLanguageModal && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowLanguageModal(false)}
+              className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90%] max-w-sm bg-zinc-950 border border-white/10 rounded-3xl p-6 z-[60] shadow-2xl overflow-hidden max-h-[80vh] flex flex-col"
+            >
+              <div className="flex items-center justify-between mb-4 flex-shrink-0">
+                <h3 className="text-lg font-bold">{t('language') || 'Langue'}</h3>
+                <button
+                  onClick={() => setShowLanguageModal(false)}
+                  className="p-1.5 hover:bg-white/10 rounded-full transition-colors"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <div className="overflow-y-auto pr-1 space-y-1 select-none flex-1">
+                {languages.map((lang) => (
+                  <button
+                    key={lang.code}
+                    onClick={() => {
+                      setLocale(lang.code);
+                      setShowLanguageModal(false);
+                    }}
+                    className={`w-full flex items-center justify-between p-3.5 rounded-xl border transition-all ${
+                      locale === lang.code
+                        ? "bg-white/10 border-white/20 text-white"
+                        : "bg-white/[0.02] border-white/5 text-zinc-400 hover:bg-white/5 hover:text-white"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <img
+                        src={lang.flag}
+                        alt=""
+                        className="w-5 h-5 rounded-full object-cover flex-shrink-0"
+                        onError={(e) => { e.currentTarget.style.opacity = "0"; }}
+                      />
+                      <span className="text-sm font-medium">{lang.name}</span>
+                    </div>
+                    {locale === lang.code && (
+                      <div className="w-2 h-2 rounded-full bg-emerald-400" />
+                    )}
+                  </button>
+                ))}
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

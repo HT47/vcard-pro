@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
+import { useI18n } from "@/context/I18nContext";
 import {
   LayoutDashboard, Settings, LogOut, Copy, CheckCircle2,
   ExternalLink, PlusCircle, Trash2, Eye, QrCode, Share2, User
@@ -21,6 +22,7 @@ interface VCard {
 
 export default function Dashboard() {
   const { user, profile, loading, signOut } = useAuth();
+  const { t, isRTL } = useI18n();
   const [vcards, setVcards] = useState<VCard[]>([]);
   const [loadingCards, setLoadingCards] = useState(true);
   const [copied, setCopied] = useState(false);
@@ -76,10 +78,8 @@ export default function Dashboard() {
 
   if (!user || !profile) return null;
 
-  const primaryCard = vcards.find(v => v.is_primary);
-
   return (
-    <div className="min-h-screen bg-[#050505] text-white">
+    <div className="min-h-screen bg-[#050505] text-white" dir={isRTL ? "rtl" : "ltr"}>
       {/* Top Nav */}
       <nav className="sticky top-0 z-50 border-b border-white/10 bg-black/60 backdrop-blur-xl px-4 md:px-8 py-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -89,10 +89,10 @@ export default function Dashboard() {
           <span className="font-bold text-sm tracking-tight">VCard Pro</span>
         </div>
         <div className="flex items-center gap-2 md:gap-3">
-          <Link href="/settings" className="p-2 bg-white/5 hover:bg-white/10 rounded-xl border border-white/10 transition-colors" title="Paramètres">
+          <Link href="/settings" className="p-2 bg-white/5 hover:bg-white/10 rounded-xl border border-white/10 transition-colors" title={t("settings") || "Paramètres"}>
             <Settings size={18} className="text-zinc-400" />
           </Link>
-          <button onClick={signOut} className="p-2 bg-white/5 hover:bg-white/10 rounded-xl border border-white/10 transition-colors text-zinc-400 hover:text-red-400" title="Déconnexion">
+          <button onClick={signOut} className="p-2 bg-white/5 hover:bg-white/10 rounded-xl border border-white/10 transition-colors text-zinc-400 hover:text-red-400" title={t("logout") || "Déconnexion"}>
             <LogOut size={18} />
           </button>
         </div>
@@ -123,7 +123,7 @@ export default function Dashboard() {
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1">
                 <h1 className="text-2xl font-bold truncate">{profile.display_name || profile.username}</h1>
-                <span className="px-2 py-0.5 bg-blue-500/20 text-blue-400 text-xs font-bold rounded-full border border-blue-500/30">PRO</span>
+                <span className="px-2 py-0.5 bg-blue-500/20 text-blue-400 text-xs font-bold rounded-full border border-blue-500/30">{t("pro_badge") || "PRO"}</span>
               </div>
               <p className="text-zinc-400 text-sm mb-1">@{profile.username}</p>
               {profile.bio && <p className="text-zinc-500 text-sm truncate">{profile.bio}</p>}
@@ -135,21 +135,21 @@ export default function Dashboard() {
                 className="flex items-center justify-center gap-2 px-5 py-2.5 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl text-sm font-bold hover:opacity-90 transition-all shadow-lg shadow-blue-500/20 whitespace-nowrap"
               >
                 <PlusCircle size={16} />
-                Éditer ma vCard
+                {t("edit_my_vcard") || "Éditer ma vCard"}
               </Link>
               <Link
                 href="/settings"
                 className="flex items-center justify-center gap-2 px-5 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 text-zinc-300 rounded-xl text-sm font-semibold transition-colors whitespace-nowrap"
               >
                 <Settings size={16} />
-                Paramètres
+                {t("settings") || "Paramètres"}
               </Link>
             </div>
           </div>
 
           {/* Public URL Block */}
           <div className="relative z-10 mt-6 pt-6 border-t border-white/10">
-            <p className="text-[11px] font-semibold uppercase tracking-widest text-zinc-500 mb-3">Votre lien public</p>
+            <p className="text-[11px] font-semibold uppercase tracking-widest text-zinc-500 mb-3">{t("your_public_link") || "Votre lien public"}</p>
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
               <div className="flex-1 flex items-center gap-2 bg-white/5 border border-white/10 rounded-xl px-4 py-3 min-w-0">
                 <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse flex-shrink-0" />
@@ -161,12 +161,12 @@ export default function Dashboard() {
                   className="flex items-center gap-2 px-4 py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-sm font-semibold transition-all"
                 >
                   {copied ? <CheckCircle2 size={16} className="text-emerald-400" /> : <Copy size={16} />}
-                  {copied ? "Copié !" : "Copier"}
+                  {copied ? (t("copied") || "Copié !") : (t("copy") || "Copier")}
                 </button>
                 <button
                   onClick={() => setShowQR(true)}
                   className="p-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition-colors"
-                  title="QR Code"
+                  title={t("show_qrcode") || "QR Code"}
                 >
                   <QrCode size={18} />
                 </button>
@@ -174,7 +174,7 @@ export default function Dashboard() {
                   href={`/u/${profile.username}`}
                   target="_blank"
                   className="p-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition-colors"
-                  title="Voir mon profil"
+                  title={t("show_my_profile") || "Voir mon profil"}
                 >
                   <ExternalLink size={18} />
                 </a>
@@ -186,9 +186,9 @@ export default function Dashboard() {
         {/* VCards List */}
         <div>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-bold">Mes vCards</h2>
+            <h2 className="text-lg font-bold">{t("my_vcards") || "Mes vCards"}</h2>
             <span className="text-xs text-zinc-500 bg-white/5 px-3 py-1 rounded-full border border-white/10">
-              {vcards.length} vCard{vcards.length !== 1 ? "s" : ""}
+              {vcards.length} {vcards.length === 1 ? (t("vcard_count_one") || "1 vCard") : `${vcards.length} ${t("vcard_count_many") || "vCards"}`}
             </span>
           </div>
 
@@ -205,11 +205,11 @@ export default function Dashboard() {
               <div className="w-16 h-16 bg-white/5 rounded-2xl flex items-center justify-center mx-auto mb-4">
                 <LayoutDashboard size={28} className="text-zinc-500" />
               </div>
-              <p className="text-zinc-400 font-semibold mb-2">Aucune vCard publiée</p>
-              <p className="text-zinc-600 text-sm mb-6">Créez et publiez votre première carte digitale</p>
+              <p className="text-zinc-400 font-semibold mb-2">{t("no_vcard_published") || "Aucune vCard publiée"}</p>
+              <p className="text-zinc-600 text-sm mb-6">{t("create_first_vcard") || "Créez et publiez votre première carte digitale"}</p>
               <Link href="/demo" className="inline-flex items-center gap-2 px-6 py-3 bg-white text-black rounded-xl font-bold text-sm hover:bg-zinc-200 transition-colors">
                 <PlusCircle size={16} />
-                Créer ma vCard
+                {t("create_my_vcard") || "Créer ma vCard"}
               </Link>
             </motion.div>
           ) : (
@@ -238,7 +238,7 @@ export default function Dashboard() {
                       <p className="font-semibold text-sm truncate">{vcard.data?.name || "Sans titre"}</p>
                       {vcard.is_primary && (
                         <span className="px-2 py-0.5 bg-blue-500/20 text-blue-400 text-[10px] font-bold rounded-full border border-blue-500/20 flex-shrink-0">
-                          PRINCIPALE
+                          {t("primary") || "PRINCIPALE"}
                         </span>
                       )}
                     </div>
@@ -251,15 +251,16 @@ export default function Dashboard() {
                       <button
                         onClick={() => setPrimary(vcard.id)}
                         className="px-3 py-1.5 text-[11px] font-semibold bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg transition-colors text-zinc-400 hover:text-white whitespace-nowrap"
-                        title="Définir comme principale"
+                        title={t("set_primary") || "Définir comme principale"}
                       >
-                        Principale
+                        {t("primary") || "Principale"}
                       </button>
                     )}
                     <a
                       href={`/v/${vcard.slug}`}
                       target="_blank"
                       className="p-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition-colors text-zinc-400 hover:text-white"
+                      title={t("show_my_profile") || "Voir mon profil"}
                     >
                       <Eye size={16} />
                     </a>
@@ -290,7 +291,7 @@ export default function Dashboard() {
               initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }}
               className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-[#111] border border-white/10 rounded-3xl p-8 z-[60] flex flex-col items-center gap-6 shadow-2xl"
             >
-              <h3 className="text-xl font-bold">QR Code de votre profil</h3>
+              <h3 className="text-xl font-bold">{t("profile_qr_code") || "QR Code de votre profil"}</h3>
               <div className="p-5 bg-white rounded-2xl shadow-xl">
                 <QRCodeSVG value={publicUrl} size={200} fgColor="#000" bgColor="#fff" level="Q" />
               </div>
@@ -298,17 +299,17 @@ export default function Dashboard() {
               <div className="flex gap-3 w-full">
                 <button onClick={copyUrl} className="flex-1 py-3 bg-white/10 hover:bg-white/20 rounded-xl font-bold text-sm transition-colors flex items-center justify-center gap-2">
                   {copied ? <CheckCircle2 size={16} className="text-emerald-400" /> : <Copy size={16} />}
-                  {copied ? "Copié !" : "Copier le lien"}
+                  {copied ? (t("copied") || "Copié !") : (t("copy_link") || "Copier le lien")}
                 </button>
                 <button
                   onClick={() => navigator.share?.({ title: `@${profile.username}`, url: publicUrl })}
                   className="flex-1 py-3 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl font-bold text-sm transition-all hover:opacity-90 flex items-center justify-center gap-2"
                 >
                   <Share2 size={16} />
-                  Partager
+                  {t("share") || "Partager"}
                 </button>
               </div>
-              <button onClick={() => setShowQR(false)} className="text-zinc-500 text-sm hover:text-white transition-colors">Fermer</button>
+              <button onClick={() => setShowQR(false)} className="text-zinc-500 text-sm hover:text-white transition-colors">{t("close") || "Fermer"}</button>
             </motion.div>
           </>
         )}
