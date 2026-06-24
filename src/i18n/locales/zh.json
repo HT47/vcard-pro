@@ -32,7 +32,7 @@
   "username_available": "@{username} 可用 ✓",
   "username_taken": "该名称已被占用",
   "username_invalid": "3-20个字符，小写字母、数字、_ 或 -",
-  "url_preview": "您的网址将是： vcard-pro.netlify.app/u/",
+  "url_preview": "您的网址将是： hosyardigital.com/u/",
   "register_title": "创建您的 vCard Pro",
   "register_subtitle": "只需2分钟，拥有您的数字化名片",
   "login_action": "登录",

@@ -32,7 +32,7 @@
   "username_available": "@{username} est disponible ✓",
   "username_taken": "Ce nom est déjà pris",
   "username_invalid": "3-20 caractères, lettres minuscules, chiffres, _ ou -",
-  "url_preview": "Votre URL sera : vcard-pro.netlify.app/u/",
+  "url_preview": "Votre URL sera : hosyardigital.com/u/",
   "register_title": "Créer votre vCard Pro",
   "register_subtitle": "Votre carte digitale en 2 minutes",
   "login_action": "Se connecter",

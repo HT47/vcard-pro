@@ -32,7 +32,7 @@
   "username_available": "@{username} kullanılabilir ✓",
   "username_taken": "Bu kullanıcı adı zaten alınmış",
   "username_invalid": "3-20 karakter, küçük harfler, sayılar, _ veya -",
-  "url_preview": "Bağlantınız şu şekilde olacak: vcard-pro.netlify.app/u/",
+  "url_preview": "Bağlantınız şu şekilde olacak: hosyardigital.com/u/",
   "register_title": "vCard Pro'nuzu Oluşturun",
   "register_subtitle": "2 dakikada dijital kartınız",
   "login_action": "Giriş yap",
