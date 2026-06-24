@@ -24,6 +24,9 @@ import BusinessCardClassic from "@/components/templates/BusinessCardClassic";
 import BusinessCardWave from "@/components/templates/BusinessCardWave";
 import BusinessCardGlass from "@/components/templates/BusinessCardGlass";
 import BusinessCardFreelance from "@/components/templates/BusinessCardFreelance";
+import LinkInBioTree from "@/components/templates/LinkInBioTree";
+import LinkInBioBeacons from "@/components/templates/LinkInBioBeacons";
+import LinkInBioSites from "@/components/templates/LinkInBioSites";
 
 export default function PublishedVCard() {
   const params = useParams();
@@ -82,7 +85,8 @@ END:VCARD`;
 
   const handleShare = () => {
     if (!data) return;
-    const shareUrl = window.location.href;
+    const APP_URL = process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
+    const shareUrl = `${APP_URL}/v/${params?.slug}`;
 
     if (navigator.share) {
       navigator.share({
@@ -118,6 +122,9 @@ END:VCARD`;
 
   const renderTemplate = () => {
     switch(data.layout) {
+      case 'link-tree': return <LinkInBioTree data={data} />;
+      case 'link-beacons': return <LinkInBioBeacons data={data} />;
+      case 'link-biosites': return <LinkInBioSites data={data} />;
       case 'pro-v1': return <BusinessCardV1 data={data} />;
       case 'pro-v2': return <BusinessCardV2 data={data} />;
       case 'agenda-jour': return <DailySchedule data={data} />;

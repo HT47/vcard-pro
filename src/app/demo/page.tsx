@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Smartphone, Share2, Save, X, Edit3, Eye, UploadCloud, CheckCircle2, Settings2, Plus, Trash2, Link as LinkIcon } from "lucide-react";
+import { Smartphone, Share2, Save, X, Edit3, Eye, UploadCloud, CheckCircle2, Settings2, Plus, Trash2, Link as LinkIcon, Briefcase, Calendar, Building, Activity, CreditCard, Wind, Layers, LayoutTemplate, Box, LayoutDashboard, User, Hexagon, Sun, Star, Tag, Home, LayoutGrid } from "lucide-react";
 import Link from "next/link";
 import { QRCodeSVG } from "qrcode.react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -27,6 +27,9 @@ import BusinessCardClassic from "@/components/templates/BusinessCardClassic";
 import BusinessCardWave from "@/components/templates/BusinessCardWave";
 import BusinessCardGlass from "@/components/templates/BusinessCardGlass";
 import BusinessCardFreelance from "@/components/templates/BusinessCardFreelance";
+import LinkInBioTree from "@/components/templates/LinkInBioTree";
+import LinkInBioBeacons from "@/components/templates/LinkInBioBeacons";
+import LinkInBioSites from "@/components/templates/LinkInBioSites";
 
 const THEMES = [
   // Dark & Premium
@@ -49,9 +52,12 @@ const THEMES = [
 export default function DemoBuilder() {
   const { t, locale, translations } = useI18n();
   const [activeTab, setActiveTab] = useState<"edit" | "preview">("edit");
+  const [activeCategoryTab, setActiveCategoryTab] = useState("Cartes & Profils");
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
   const [publishedSlug, setPublishedSlug] = useState<string | null>(null);
+  const [publishedUsername, setPublishedUsername] = useState<string | null>(null);
+  const [showLoginModal, setShowLoginModal] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
   
@@ -225,29 +231,58 @@ export default function DemoBuilder() {
   };
 
   const handlePublish = async () => {
-    setIsPublishing(true);
-    // Create a random slug
-    const slug = Math.random().toString(36).substring(2, 10);
-    
-    // Check if user is logged in
+    // Check if user is logged in first
     const { data: { session } } = await supabase.auth.getSession();
-    
-    const { error } = await supabase
-      .from('vcards')
-      .insert([
-        { 
-          slug, 
-          data: formData,
-          user_id: session?.user?.id || null
-        }
-      ]);
+    if (!session) {
+      setShowLoginModal(true);
+      return;
+    }
+
+    setIsPublishing(true);
+    const slug = Math.random().toString(36).substring(2, 10);
+
+    // Fetch user profile to get username
+    const { data: profileData } = await supabase
+      .from('profiles')
+      .select('username')
+      .eq('id', session.user.id)
+      .single();
+
+    const username = profileData?.username || null;
+
+    // Unset previous primary if this is first publish
+    if (username) {
+      const { count } = await supabase
+        .from('vcards')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', session.user.id)
+        .eq('is_primary', true);
       
-    setIsPublishing(false);
-    if (!error) {
-      setPublishedSlug(slug);
+      const isPrimary = (count ?? 0) === 0;
+
+      const { error } = await supabase
+        .from('vcards')
+        .insert([{ slug, data: formData, user_id: session.user.id, username, is_primary: isPrimary }]);
+
+      setIsPublishing(false);
+      if (!error) {
+        setPublishedSlug(slug);
+        setPublishedUsername(username);
+      } else {
+        console.error(error);
+        alert('Erreur lors de la publication : ' + error.message);
+      }
     } else {
-      console.error(error);
-      alert("Erreur lors de la publication : " + error.message);
+      // No profile yet — save without username
+      const { error } = await supabase
+        .from('vcards')
+        .insert([{ slug, data: formData, user_id: session.user.id }]);
+      setIsPublishing(false);
+      if (!error) {
+        setPublishedSlug(slug);
+      } else {
+        alert('Erreur : ' + error.message);
+      }
     }
   };
 
@@ -275,9 +310,12 @@ END:VCARD`;
   };
 
   const handleShare = () => {
-    const shareUrl = publishedSlug 
-      ? `${window.location.origin}/v/${publishedSlug}`
-      : window.location.href;
+    if (!publishedSlug) {
+      alert(t("publish_first_to_share") || "Veuillez d'abord publier votre vCard pour obtenir un lien de partage unique.");
+      return;
+    }
+
+    const shareUrl = `${window.location.origin}/v/${publishedSlug}`;
 
     if (navigator.share) {
       navigator.share({
@@ -287,7 +325,7 @@ END:VCARD`;
       }).catch(err => console.log(err));
     } else {
       navigator.clipboard.writeText(shareUrl);
-      alert("Lien copié dans le presse-papier !");
+      alert(t("link_copied") || "Lien copié dans le presse-papier !");
     }
   };
 
@@ -360,43 +398,124 @@ END:VCARD`;
     </div>
   );
 
-  const LayoutSelector = () => (
-    <div className="flex flex-wrap gap-2 w-full">
-      {[
-        { id: 'classic', label: 'Classic' },
-        { id: 'wave', label: 'Wave' },
-        { id: 'glass', label: 'Glass' },
-        { id: 'minimal', label: 'Minimal' },
-        { id: 'brutal', label: 'Brutal' },
-        { id: 'structure-pro', label: 'Structure Pro' },
-        { id: 'classic-pro', label: 'Classic Pro' },
-        { id: 'wave-pro', label: 'Wave Pro' },
-        { id: 'glass-pro', label: 'Glass Pro' },
-        { id: 'freelance-pro', label: 'Freelance Pro' },
-        { id: 'pro-v1', label: 'Business V1' },
-        { id: 'pro-v2', label: 'Business V2' },
-        { id: 'agenda-jour', label: 'Agenda Jour' },
-        { id: 'agenda-semaine', label: 'Agenda Semaine' },
-        { id: 'yoga-poster', label: 'Yoga Affiche' },
-        { id: 'yoga-schedule', label: 'Yoga Semaine' },
-        { id: 'immo-simple', label: 'Immo Simple' },
-        { id: 'immo-modern', label: 'Immo Modern' },
-        { id: 'immo-grid', label: 'Immo Grid' },
-        { id: 'pro-v3', label: 'Pro Geometric' },
-        { id: 'pro-v4', label: 'Pro Bright' },
-        { id: 'event-gradient', label: 'Event Gradient' },
-        { id: 'event-retro', label: 'Event Retro' }
-      ].map((layoutObj) => (
-        <button
-          key={layoutObj.id}
-          onClick={() => setFormData(prev => ({ ...prev, layout: layoutObj.id }))}
-          className={`flex-1 min-w-[30%] py-2 px-1 text-[10px] font-bold uppercase tracking-wider rounded-xl border transition-all ${formData.layout === layoutObj.id ? 'bg-white text-black border-white shadow-lg' : 'bg-white/5 text-zinc-400 border-white/10 hover:bg-white/10'}`}
-        >
-          {layoutObj.label}
-        </button>
-      ))}
-    </div>
-  );
+  const LayoutSelector = () => {
+    const categories = [
+      {
+        name: 'Liens en Bio',
+        icon: <LinkIcon size={16} className="text-purple-400" />,
+        layouts: [
+          { id: 'link-tree', label: 'Classic Tree', icon: <Box size={20} strokeWidth={1.5} /> },
+          { id: 'link-beacons', label: 'Creator Pro', icon: <Star size={20} strokeWidth={1.5} /> },
+          { id: 'link-biosites', label: 'Minimal Site', icon: <LayoutTemplate size={20} strokeWidth={1.5} /> },
+        ]
+      },
+      {
+        name: 'Cartes & Profils',
+        icon: <Briefcase size={16} className="text-blue-400" />,
+        layouts: [
+          { id: 'classic', label: 'Classic', icon: <CreditCard size={20} strokeWidth={1.5} /> },
+          { id: 'wave', label: 'Wave', icon: <Wind size={20} strokeWidth={1.5} /> },
+          { id: 'glass', label: 'Glass', icon: <Layers size={20} strokeWidth={1.5} /> },
+          { id: 'minimal', label: 'Minimal', icon: <LayoutTemplate size={20} strokeWidth={1.5} /> },
+          { id: 'brutal', label: 'Brutal', icon: <Box size={20} strokeWidth={1.5} /> },
+          { id: 'structure-pro', label: 'Structure', icon: <LayoutDashboard size={20} strokeWidth={1.5} /> },
+          { id: 'classic-pro', label: 'Classic Pro', icon: <CreditCard size={20} strokeWidth={1.5} /> },
+          { id: 'wave-pro', label: 'Wave Pro', icon: <Wind size={20} strokeWidth={1.5} /> },
+          { id: 'glass-pro', label: 'Glass Pro', icon: <Layers size={20} strokeWidth={1.5} /> },
+          { id: 'freelance-pro', label: 'Freelance', icon: <User size={20} strokeWidth={1.5} /> },
+          { id: 'pro-v1', label: 'Corporate', icon: <Briefcase size={20} strokeWidth={1.5} /> },
+          { id: 'pro-v2', label: 'Executive', icon: <Briefcase size={20} strokeWidth={1.5} /> },
+          { id: 'pro-v3', label: 'Geometric', icon: <Hexagon size={20} strokeWidth={1.5} /> },
+          { id: 'pro-v4', label: 'Bright', icon: <Sun size={20} strokeWidth={1.5} /> },
+        ]
+      },
+      {
+        name: 'Agendas & Événements',
+        icon: <Calendar size={16} className="text-emerald-400" />,
+        layouts: [
+          { id: 'agenda-jour', label: 'Journée', icon: <Calendar size={20} strokeWidth={1.5} /> },
+          { id: 'agenda-semaine', label: 'Semaine', icon: <Calendar size={20} strokeWidth={1.5} /> },
+          { id: 'event-gradient', label: 'Gradient', icon: <Star size={20} strokeWidth={1.5} /> },
+          { id: 'event-retro', label: 'Retro', icon: <Tag size={20} strokeWidth={1.5} /> }
+        ]
+      },
+      {
+        name: 'Immobilier',
+        icon: <Building size={16} className="text-orange-400" />,
+        layouts: [
+          { id: 'immo-simple', label: 'Simple', icon: <Home size={20} strokeWidth={1.5} /> },
+          { id: 'immo-modern', label: 'Modern', icon: <Building size={20} strokeWidth={1.5} /> },
+          { id: 'immo-grid', label: 'Grid', icon: <LayoutGrid size={20} strokeWidth={1.5} /> }
+        ]
+      },
+      {
+        name: 'Fitness & Bien-être',
+        icon: <Activity size={16} className="text-rose-400" />,
+        layouts: [
+          { id: 'yoga-poster', label: 'Affiche', icon: <Activity size={20} strokeWidth={1.5} /> },
+          { id: 'yoga-schedule', label: 'Planning', icon: <Activity size={20} strokeWidth={1.5} /> }
+        ]
+      }
+    ];
+
+    return (
+      <div className="space-y-4 w-full">
+        {/* Horizontal Menu Tabs */}
+        <div className="flex overflow-x-auto gap-2 scrollbar-hide border-b border-white/10 pb-[-1px]">
+          {categories.map((category) => {
+            const isActive = activeCategoryTab === category.name;
+            return (
+              <button
+                key={category.name}
+                onClick={() => setActiveCategoryTab(category.name)}
+                className={`flex items-center gap-2 px-4 py-3 border-b-2 transition-all whitespace-nowrap ${isActive ? 'border-white text-white bg-white/[0.03] shadow-[inset_0_-2px_10px_rgba(255,255,255,0.05)]' : 'border-transparent text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.02]'}`}
+              >
+                <div className={`p-1 rounded-md transition-colors ${isActive ? 'bg-white/10' : 'bg-transparent'}`}>
+                  {category.icon}
+                </div>
+                <span className="text-xs font-bold uppercase tracking-wider">{category.name}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Tab Content */}
+        <div className="pt-2">
+          {categories.filter(c => c.name === activeCategoryTab).map((category) => (
+            <div key={category.name} className="grid grid-cols-2 lg:grid-cols-3 gap-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
+              {category.layouts.map((layoutObj) => {
+                const isActive = formData.layout === layoutObj.id;
+                return (
+                  <motion.button
+                    key={layoutObj.id}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => setFormData(prev => ({ ...prev, layout: layoutObj.id }))}
+                    className={`relative flex flex-col items-center justify-center p-4 rounded-2xl border transition-all overflow-hidden group ${isActive ? 'bg-gradient-to-br from-white/10 to-white/5 border-white shadow-xl shadow-white/5' : 'bg-white/[0.02] border-white/10 hover:bg-white/[0.05] hover:border-white/30'}`}
+                  >
+                    {isActive && (
+                      <div className="absolute top-2 right-2">
+                        <CheckCircle2 size={14} className="text-white drop-shadow-md" />
+                      </div>
+                    )}
+                    
+                    {/* Visual Thumbnail / Icon */}
+                    <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-3 transition-colors ${isActive ? 'bg-white text-black shadow-lg shadow-white/20' : 'bg-black/30 text-zinc-400 group-hover:text-white group-hover:bg-white/10 border border-white/5'}`}>
+                      {layoutObj.icon}
+                    </div>
+                    
+                    <span className={`text-[10px] font-bold uppercase tracking-wider ${isActive ? 'text-white' : 'text-zinc-400 group-hover:text-zinc-200'}`}>
+                      {layoutObj.label}
+                    </span>
+                  </motion.button>
+                );
+              })}
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
 
   const ModeSelector = () => (
     <div className="flex gap-3 w-full">
@@ -846,6 +965,10 @@ END:VCARD`;
           {formData.layout === 'glass-pro' && <BusinessCardGlass data={formData} />}
           {formData.layout === 'freelance-pro' && <BusinessCardFreelance data={formData} />}
           
+          {formData.layout === 'link-tree' && <LinkInBioTree data={formData} />}
+          {formData.layout === 'link-beacons' && <LinkInBioBeacons data={formData} />}
+          {formData.layout === 'link-biosites' && <LinkInBioSites data={formData} />}
+          
           {['classic', 'wave', 'glass', 'minimal', 'brutal'].includes(formData.layout) && (
             <>
           
@@ -1083,58 +1206,116 @@ END:VCARD`;
         </div>
       </div>
 
+      {/* Login Required Modal */}
+      <AnimatePresence>
+        {showLoginModal && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[60]"
+              onClick={() => setShowLoginModal(false)}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
+              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-sm bg-[#111] border border-white/10 rounded-2xl p-8 z-[70] shadow-2xl flex flex-col items-center text-center"
+            >
+              <div className="w-16 h-16 bg-blue-500/20 text-blue-400 rounded-2xl flex items-center justify-center mb-4">
+                <span className="text-3xl">🔐</span>
+              </div>
+              <h2 className="text-xl font-bold mb-2">Connexion requise</h2>
+              <p className="text-zinc-400 text-sm mb-6">Créez un compte gratuit pour publier votre vCard avec votre URL personnalisée.</p>
+              <div className="flex flex-col gap-3 w-full">
+                <a href="/register" className="w-full py-3.5 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-bold text-sm hover:opacity-90 transition-all shadow-lg shadow-blue-500/20">
+                  Créer mon compte ⚡
+                </a>
+                <a href="/login" className="w-full py-3 bg-white/5 hover:bg-white/10 border border-white/10 text-zinc-300 rounded-xl font-bold text-sm transition-colors">
+                  Se connecter
+                </a>
+              </div>
+              <button onClick={() => setShowLoginModal(false)} className="absolute top-4 right-4 text-zinc-500 hover:text-white"><X size={20} /></button>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
       {/* Publish Success Modal */}
       <AnimatePresence>
         {publishedSlug && (
           <>
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60]"
               onClick={() => setPublishedSlug(null)}
             />
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
               className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-[#111] border border-white/10 rounded-2xl p-6 z-[70] shadow-2xl flex flex-col items-center text-center"
             >
-              <div className="w-16 h-16 bg-green-500/20 text-green-400 rounded-full flex items-center justify-center mb-4">
+              <div className="w-16 h-16 bg-green-500/20 text-green-400 rounded-2xl flex items-center justify-center mb-4">
                 <CheckCircle2 size={32} />
               </div>
-              <h2 className="text-2xl font-bold mb-2">vCard Publiée !</h2>
-              <p className="text-zinc-400 text-sm mb-6">Votre carte de visite est maintenant en ligne. Vous pouvez partager ce lien :</p>
-              
-              <div className="w-full flex items-center gap-2 bg-black border border-white/10 rounded-xl p-3 mb-6">
-                <LinkIcon size={16} className="text-zinc-500" />
-                <input 
-                  type="text" 
-                  readOnly 
-                  value={`${typeof window !== 'undefined' ? window.location.origin : ''}/v/${publishedSlug}`} 
-                  className="bg-transparent border-none outline-none w-full text-sm text-white"
-                />
+              <h2 className="text-2xl font-bold mb-2">vCard Publiée ! 🎉</h2>
+              <p className="text-zinc-400 text-sm mb-6">Votre carte digitale est en ligne. Partagez votre lien professionnel :</p>
+
+              {/* Primary URL — profile page */}
+              {publishedUsername && (
+                <div className="w-full mb-3">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-blue-400 mb-2 text-left">🌐 Page Profil (recommandé)</p>
+                  <div className="flex items-center gap-2 bg-blue-600/10 border border-blue-500/20 rounded-xl p-3">
+                    <LinkIcon size={14} className="text-blue-400 flex-shrink-0" />
+                    <input
+                      type="text"
+                      readOnly
+                      value={`${typeof window !== 'undefined' ? window.location.origin : ''}/u/${publishedUsername}`}
+                      className="bg-transparent border-none outline-none w-full text-sm text-white font-mono min-w-0"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* VCF direct download link */}
+              <div className="w-full mb-6">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-2 text-left">📥 Lien direct .vcf</p>
+                <div className="flex items-center gap-2 bg-black/40 border border-white/10 rounded-xl p-3">
+                  <LinkIcon size={14} className="text-zinc-500 flex-shrink-0" />
+                  <input
+                    type="text"
+                    readOnly
+                    value={`${typeof window !== 'undefined' ? window.location.origin : ''}/v/${publishedSlug}`}
+                    className="bg-transparent border-none outline-none w-full text-sm text-zinc-400 font-mono min-w-0"
+                  />
+                </div>
               </div>
 
               <div className="flex gap-3 w-full">
-                <button 
+                <button
                   onClick={() => {
-                    navigator.clipboard.writeText(`${window.location.origin}/v/${publishedSlug}`);
-                    alert("Lien copié !");
+                    const url = publishedUsername
+                      ? `${window.location.origin}/u/${publishedUsername}`
+                      : `${window.location.origin}/v/${publishedSlug}`;
+                    navigator.clipboard.writeText(url);
+                    alert('Lien copié !');
                   }}
-                  className="flex-1 py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl font-bold transition-colors"
+                  className="flex-1 py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl font-bold transition-colors text-sm"
                 >
-                  Copier
+                  📋 Copier
                 </button>
-                <a 
-                  href={`/v/${publishedSlug}`}
+                <a
+                  href={publishedUsername ? `/u/${publishedUsername}` : `/v/${publishedSlug}`}
                   target="_blank"
-                  className="flex-1 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold transition-colors block"
+                  className="flex-1 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-bold transition-all hover:opacity-90 text-sm block"
                 >
-                  Ouvrir
+                  🚀 Ouvrir
                 </a>
               </div>
-              
-              <button 
-                onClick={() => setPublishedSlug(null)}
-                className="absolute top-4 right-4 text-zinc-500 hover:text-white"
-              >
+
+              {publishedUsername && (
+                <a href="/dashboard" className="mt-4 text-xs text-zinc-500 hover:text-white transition-colors">
+                  Voir mon dashboard →
+                </a>
+              )}
+
+              <button onClick={() => { setPublishedSlug(null); setPublishedUsername(null); }} className="absolute top-4 right-4 text-zinc-500 hover:text-white">
                 <X size={20} />
               </button>
             </motion.div>

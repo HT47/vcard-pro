@@ -86,7 +86,7 @@ const BusinessCardFreelance = ({ data }: { data?: any }) => {
             href={`tel:${phone}`}
             className="block cursor-pointer group"
           >
-            <p className="text-[1.05rem] font-medium opacity-80" style={{ color: darkBlue }}>Telephone:</p>
+            <p className="text-[1.05rem] font-medium opacity-80" style={{ color: darkBlue }}>{t('phone')}:</p>
             <p className="text-[1.15rem] font-bold group-hover:opacity-70 transition-opacity" style={{ color: darkBlue }}>{phone}</p>
           </motion.a>
           <motion.a 
@@ -95,7 +95,7 @@ const BusinessCardFreelance = ({ data }: { data?: any }) => {
             href={`mailto:${email}`}
             className="block cursor-pointer group"
           >
-            <p className="text-[1.05rem] font-medium opacity-80" style={{ color: darkBlue }}>Email:</p>
+            <p className="text-[1.05rem] font-medium opacity-80" style={{ color: darkBlue }}>{t('email')}:</p>
             <p className="text-[1.15rem] font-bold truncate group-hover:opacity-70 transition-opacity" style={{ color: darkBlue }}>{email}</p>
           </motion.a>
           <motion.a 
@@ -105,7 +105,7 @@ const BusinessCardFreelance = ({ data }: { data?: any }) => {
             target="_blank" rel="noopener noreferrer"
             className="block cursor-pointer group"
           >
-            <p className="text-[1.05rem] font-medium opacity-80" style={{ color: darkBlue }}>Address:</p>
+            <p className="text-[1.05rem] font-medium opacity-80" style={{ color: darkBlue }}>{t('address')}:</p>
             <p className="text-[1.15rem] font-bold leading-tight group-hover:opacity-70 transition-opacity" style={{ color: darkBlue }}>{location}</p>
           </motion.a>
           

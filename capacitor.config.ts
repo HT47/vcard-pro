@@ -5,9 +5,10 @@ const config: CapacitorConfig = {
   appName: 'VCard Pro',
   webDir: 'out',
   server: {
-    url: 'https://vcarddigital.netlify.app',
-    cleartext: true
+    url: 'https://hosyardigital.com',
+    cleartext: false
   }
 };
 
 export default config;
+
