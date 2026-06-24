@@ -262,7 +262,7 @@ export default function DemoBuilder() {
 
       const { error } = await supabase
         .from('vcards')
-        .insert([{ slug, data: formData, user_id: session.user.id, username, is_primary: isPrimary }]);
+        .insert([{ slug, data: formData, user_id: session.user.id, is_primary: isPrimary }]);
 
       setIsPublishing(false);
       if (!error) {
