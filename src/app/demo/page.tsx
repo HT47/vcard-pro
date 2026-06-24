@@ -312,20 +312,20 @@ export default function DemoBuilder() {
 
     return (
       <div className="space-y-4 w-full">
-        {/* Horizontal Menu Tabs */}
-        <div className="flex overflow-x-auto gap-2 scrollbar-hide border-b border-white/10 pb-[-1px]">
+        {/* macOS Style Segmented Control */}
+        <div className="flex overflow-x-auto gap-1.5 p-1.5 bg-[#111] border border-white/5 rounded-2xl [&::-webkit-scrollbar]:hidden w-full ring-1 ring-white/10">
           {categories.map((category) => {
             const isActive = activeCategoryTab === category.name;
             return (
               <button
                 key={category.name}
                 onClick={() => setActiveCategoryTab(category.name)}
-                className={`flex items-center gap-2 px-4 py-3 border-b-2 transition-all whitespace-nowrap ${isActive ? 'border-white text-white bg-white/[0.03] shadow-[inset_0_-2px_10px_rgba(255,255,255,0.05)]' : 'border-transparent text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.02]'}`}
+                className={`flex-1 min-w-fit flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl transition-all whitespace-nowrap ${isActive ? 'bg-white/10 text-white shadow-lg border border-white/5' : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.02]'}`}
               >
-                <div className={`p-1 rounded-md transition-colors ${isActive ? 'bg-white/10' : 'bg-transparent'}`}>
+                <div className={`transition-colors ${isActive ? 'text-white' : 'text-zinc-500 group-hover:text-zinc-300'}`}>
                   {category.icon}
                 </div>
-                <span className="text-xs font-bold uppercase tracking-wider">{category.name}</span>
+                <span className="text-[11px] font-bold uppercase tracking-wider">{category.name}</span>
               </button>
             );
           })}
@@ -334,7 +334,7 @@ export default function DemoBuilder() {
         {/* Tab Content */}
         <div className="pt-2">
           {categories.filter(c => c.name === activeCategoryTab).map((category) => (
-            <div key={category.name} className="grid grid-cols-2 lg:grid-cols-3 gap-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <div key={category.name} className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 animate-in fade-in slide-in-from-bottom-2 duration-300">
               {category.layouts.map((layoutObj) => {
                 const isActive = formData.layout === layoutObj.id;
                 return (
@@ -343,19 +343,20 @@ export default function DemoBuilder() {
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={() => setFormData(prev => ({ ...prev, layout: layoutObj.id }))}
-                    className={`relative flex flex-col items-center justify-center p-4 rounded-2xl border transition-all overflow-hidden group ${isActive ? 'bg-gradient-to-br from-white/10 to-white/5 border-white shadow-xl shadow-white/5' : 'bg-white/[0.02] border-white/10 hover:bg-white/[0.05] hover:border-white/30'}`}
+                    className={`relative flex flex-col items-center justify-center p-3 rounded-xl border transition-all overflow-hidden group ${isActive ? 'bg-white/10 border-white shadow-md' : 'bg-white/[0.02] border-white/5 hover:bg-white/[0.05] hover:border-white/20'}`}
                   >
                     {isActive && (
-                      <div className="absolute top-2 right-2">
-                        <CheckCircle2 size={14} className="text-white drop-shadow-md" />
+                      <div className="absolute top-1.5 right-1.5">
+                        <CheckCircle2 size={12} className="text-white drop-shadow-md" />
                       </div>
                     )}
                     
-                    <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-3 transition-colors ${isActive ? 'bg-white text-black shadow-lg shadow-white/20' : 'bg-black/30 text-zinc-400 group-hover:text-white group-hover:bg-white/10 border border-white/5'}`}>
-                      {layoutObj.icon}
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center mb-2 transition-colors ${isActive ? 'bg-white text-black shadow-md' : 'bg-black/30 text-zinc-400 group-hover:text-white group-hover:bg-white/10 border border-white/5'}`}>
+                      {/* Resize icon slightly */}
+                      <div className="scale-75">{layoutObj.icon}</div>
                     </div>
                     
-                    <span className={`text-[10px] font-bold uppercase tracking-wider ${isActive ? 'text-white' : 'text-zinc-400 group-hover:text-zinc-200'}`}>
+                    <span className={`text-[9px] font-bold uppercase tracking-wider text-center ${isActive ? 'text-white' : 'text-zinc-500 group-hover:text-zinc-300'}`}>
                       {layoutObj.label}
                     </span>
                   </motion.button>
@@ -510,7 +511,7 @@ export default function DemoBuilder() {
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-5 md:p-8 space-y-10 scrollbar-hide pb-32 md:pb-8">
+        <div className="flex-1 overflow-y-auto p-5 md:p-8 space-y-10 [&::-webkit-scrollbar]:hidden pb-32 md:pb-8">
           
           <section className="space-y-6">
             <h2 className="text-[11px] font-bold uppercase tracking-widest text-zinc-500 flex items-center gap-2">
@@ -578,6 +579,28 @@ export default function DemoBuilder() {
               <div className="flex-1">
                 <label className="block text-[11px] font-medium text-zinc-400 mb-1.5 mx-1">{t('full_name') || "Nom complet"}</label>
                 <input type="text" name="name" value={formData.name} onChange={handleChange} className="w-full bg-white/[0.03] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-white/30 focus:bg-white/[0.06] transition-all" />
+              </div>
+            </div>
+
+            {/* AVATAR & COVER */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <label className="block text-[11px] font-medium text-zinc-400 mx-1">Photo de Profil (URL)</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <User size={14} className="text-zinc-500" />
+                  </div>
+                  <input type="text" name="avatarUrl" value={formData.avatarUrl} onChange={handleChange} placeholder="https://..." className="w-full bg-white/[0.03] border border-white/10 rounded-xl pl-9 pr-3 py-3 text-sm text-white focus:outline-none focus:border-white/30 focus:bg-white/[0.06] transition-all" />
+                </div>
+              </div>
+              <div className="space-y-1">
+                <label className="block text-[11px] font-medium text-zinc-400 mx-1">Image de Couverture (URL)</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Star size={14} className="text-zinc-500" />
+                  </div>
+                  <input type="text" name="coverUrl" value={formData.coverUrl} onChange={handleChange} placeholder="https://..." className="w-full bg-white/[0.03] border border-white/10 rounded-xl pl-9 pr-3 py-3 text-sm text-white focus:outline-none focus:border-white/30 focus:bg-white/[0.06] transition-all" />
+                </div>
               </div>
             </div>
 
@@ -730,7 +753,7 @@ export default function DemoBuilder() {
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto w-full h-full scrollbar-hide relative bg-[#050505]">
+          <div className="flex-1 overflow-y-auto w-full h-full [&::-webkit-scrollbar]:hidden relative bg-[#050505]">
             <AnimatePresence mode="wait">
               <motion.div
                 key={formData.layout + formData.mode + formData.theme.id}
