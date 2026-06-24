@@ -687,89 +687,91 @@ export default function DemoBuilder() {
             </div>
 
             {/* AVATAR & COVER - STYLE PRO MAX */}
-            <div className="space-y-3">
-              <label className="block text-[11px] font-medium text-zinc-400 mx-1">
-                Aperçu et importation des visuels
-              </label>
-              
-              <div className="relative h-32 w-full rounded-2xl border border-white/10 bg-white/[0.01] overflow-hidden group/cover transition-all duration-300 hover:border-white/20">
-                {/* Cover Image */}
-                {formData.coverUrl ? (
-                  <img src={formData.coverUrl} className="w-full h-full object-cover" alt="Cover" />
-                ) : (
-                  <div className="w-full h-full bg-gradient-to-r from-zinc-900 to-zinc-950 flex items-center justify-center text-zinc-600 text-xs border-dashed border-2 border-white/5 rounded-2xl">
-                    Aucune image de couverture
-                  </div>
-                )}
-                
-                {/* Cover Image Upload Hover Overlay */}
-                <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px] opacity-0 group-hover/cover:opacity-100 transition-all duration-200 flex items-center justify-center gap-2">
-                  <div className="relative px-3.5 py-2 bg-white text-black font-bold text-xs rounded-xl hover:scale-105 transition-transform cursor-pointer overflow-hidden flex items-center gap-2 shadow-xl">
-                    <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e, 'coverUrl')} className="absolute inset-0 opacity-0 cursor-pointer" />
-                    <UploadCloud size={14} />
-                    Importer la bannière
-                  </div>
-                  {formData.coverUrl && (
-                    <button 
-                      onClick={() => setFormData(prev => ({ ...prev, coverUrl: "" }))}
-                      className="p-2 bg-red-500/20 hover:bg-red-500/40 text-red-400 border border-red-500/30 rounded-xl transition-colors shadow-lg"
-                      title="Supprimer la bannière"
-                    >
-                      <Trash2 size={14} />
-                    </button>
+            <div className="grid grid-cols-2 gap-4 pb-2">
+              {/* Photo Profil */}
+              <div className="space-y-2">
+                <label className="block text-[11px] font-medium text-zinc-400 mx-1">Photo Profil</label>
+                <div className="relative w-full aspect-square max-w-[140px] rounded-2xl bg-white/[0.02] border border-white/10 p-2 flex flex-col items-center justify-center group/avatar transition-all duration-300 hover:border-white/20 overflow-hidden">
+                  {formData.avatarUrl ? (
+                    <div className="relative w-full h-full">
+                      <img src={formData.avatarUrl} className="w-full h-full object-cover rounded-xl" alt="Avatar" />
+                      {/* Delete button */}
+                      <button 
+                        type="button"
+                        onClick={() => setFormData(prev => ({ ...prev, avatarUrl: "" }))}
+                        className="absolute top-1.5 right-1.5 p-1.5 bg-black/60 hover:bg-red-500/80 text-white rounded-lg transition-colors z-20 backdrop-blur-md"
+                        title="Supprimer la photo"
+                      >
+                        <Trash2 size={12} />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center gap-1.5 text-zinc-500 text-center p-3 h-full">
+                      <UploadCloud size={24} className="text-zinc-400" />
+                      <span className="text-[10px]">Importer</span>
+                    </div>
                   )}
-                </div>
 
-                {/* Profile Avatar overlayed bottom-left */}
-                <div className="absolute bottom-3 left-4 group/avatar z-10">
-                  <div className="relative w-16 h-16 rounded-full border-[3px] border-black bg-zinc-900 shadow-2xl overflow-hidden">
-                    {formData.avatarUrl ? (
-                      <img src={formData.avatarUrl} className="w-full h-full object-cover" alt="Avatar" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-zinc-500 bg-zinc-800">
-                        <User size={24} />
-                      </div>
-                    )}
-                    
-                    {/* Avatar Upload Hover Overlay */}
-                    <label className="absolute inset-0 bg-black/60 opacity-0 group-hover/avatar:opacity-100 transition-opacity flex items-center justify-center cursor-pointer">
-                      <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e, 'avatarUrl')} className="absolute inset-0 opacity-0 cursor-pointer" />
-                      <UploadCloud size={16} className="text-white" />
-                    </label>
-                  </div>
+                  {/* Upload overlay */}
+                  <label className="absolute inset-0 bg-black/60 opacity-0 group-hover/avatar:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1 cursor-pointer z-10">
+                    <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e, 'avatarUrl')} className="absolute inset-0 opacity-0 cursor-pointer" />
+                    <UploadCloud size={20} className="text-white" />
+                    <span className="text-[10px] text-white font-medium">Modifier</span>
+                  </label>
                 </div>
+                
+                {/* Fallback URL input (compact) */}
+                <input 
+                  type="text" 
+                  name="avatarUrl" 
+                  value={formData.avatarUrl} 
+                  onChange={handleChange} 
+                  placeholder="Lien photo" 
+                  className="w-full bg-white/[0.02] border border-white/10 hover:border-white/20 rounded-xl px-3 py-1.5 text-[10px] text-zinc-300 focus:outline-none focus:border-white/30 transition-all" 
+                />
               </div>
 
-              {/* URL Text fields (Subtle fallback fields) */}
-              <div className="grid grid-cols-2 gap-3 pt-1">
-                <div className="space-y-1">
-                  <label className="block text-[9px] font-medium text-zinc-500 mx-1">Lien direct photo profil</label>
-                  <div className="relative">
-                    <User size={10} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-600" />
-                    <input 
-                      type="text" 
-                      name="avatarUrl" 
-                      value={formData.avatarUrl} 
-                      onChange={handleChange} 
-                      placeholder="https://..." 
-                      className="w-full bg-white/[0.02] border border-white/10 hover:border-white/20 rounded-xl pl-7 pr-3 py-2 text-[11px] text-zinc-300 focus:outline-none focus:border-white/30 focus:bg-white/[0.04] transition-all" 
-                    />
-                  </div>
+              {/* Image Couverture */}
+              <div className="space-y-2">
+                <label className="block text-[11px] font-medium text-zinc-400 mx-1">Image Couverture</label>
+                <div className="relative w-full aspect-square max-w-[140px] rounded-2xl bg-white/[0.02] border border-white/10 p-2 flex flex-col items-center justify-center group/cover transition-all duration-300 hover:border-white/20 overflow-hidden">
+                  {formData.coverUrl ? (
+                    <div className="relative w-full h-full">
+                      <img src={formData.coverUrl} className="w-full h-full object-cover rounded-xl" alt="Cover" />
+                      {/* Delete button */}
+                      <button 
+                        type="button"
+                        onClick={() => setFormData(prev => ({ ...prev, coverUrl: "" }))}
+                        className="absolute top-1.5 right-1.5 p-1.5 bg-black/60 hover:bg-red-500/80 text-white rounded-lg transition-colors z-20 backdrop-blur-md"
+                        title="Supprimer la couverture"
+                      >
+                        <Trash2 size={12} />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center gap-1.5 text-zinc-500 text-center p-3 h-full">
+                      <UploadCloud size={24} className="text-zinc-400" />
+                      <span className="text-[10px]">Importer</span>
+                    </div>
+                  )}
+
+                  {/* Upload overlay */}
+                  <label className="absolute inset-0 bg-black/60 opacity-0 group-hover/cover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1 cursor-pointer z-10">
+                    <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e, 'coverUrl')} className="absolute inset-0 opacity-0 cursor-pointer" />
+                    <UploadCloud size={20} className="text-white" />
+                    <span className="text-[10px] text-white font-medium">Modifier</span>
+                  </label>
                 </div>
-                <div className="space-y-1">
-                  <label className="block text-[9px] font-medium text-zinc-500 mx-1">Lien direct couverture</label>
-                  <div className="relative">
-                    <Star size={10} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-600" />
-                    <input 
-                      type="text" 
-                      name="coverUrl" 
-                      value={formData.coverUrl} 
-                      onChange={handleChange} 
-                      placeholder="https://..." 
-                      className="w-full bg-white/[0.02] border border-white/10 hover:border-white/20 rounded-xl pl-7 pr-3 py-2 text-[11px] text-zinc-300 focus:outline-none focus:border-white/30 focus:bg-white/[0.04] transition-all" 
-                    />
-                  </div>
-                </div>
+                
+                {/* Fallback URL input (compact) */}
+                <input 
+                  type="text" 
+                  name="coverUrl" 
+                  value={formData.coverUrl} 
+                  onChange={handleChange} 
+                  placeholder="Lien couverture" 
+                  className="w-full bg-white/[0.02] border border-white/10 hover:border-white/20 rounded-xl px-3 py-1.5 text-[10px] text-zinc-300 focus:outline-none focus:border-white/30 transition-all" 
+                />
               </div>
             </div>
 
