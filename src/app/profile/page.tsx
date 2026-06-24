@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useI18n } from "@/context/I18nContext";
-import { User, Mail, Briefcase, Building, FileText, Camera, ArrowLeft, Save, Loader2 } from "lucide-react";
+import { User, Mail, Briefcase, Building, FileText, Camera, ArrowLeft, Save, Loader2, Link2 } from "lucide-react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth";
@@ -15,8 +15,10 @@ export default function ProfilePage() {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
+    username: "",
     display_name: "",
     bio: "",
   });
@@ -28,6 +30,7 @@ export default function ProfilePage() {
     }
     if (profile) {
       setFormData({
+        username: profile.username || "",
         display_name: profile.display_name || "",
         bio: profile.bio || "",
       });
@@ -37,12 +40,22 @@ export default function ProfilePage() {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
+    setErrorMsg(null);
+
+    // Validate username (lowercase letters, numbers, dash, underscore, 3-20 chars)
+    const usernameRegex = /^[a-z0-9_-]{3,20}$/;
+    if (!usernameRegex.test(formData.username)) {
+      setErrorMsg(t("username_invalid") || "3-20 caractères, minuscules, chiffres, _ ou -");
+      return;
+    }
+
     setSaving(true);
     setSuccess(false);
 
     const { error } = await supabase
       .from("profiles")
       .update({
+        username: formData.username,
         display_name: formData.display_name,
         bio: formData.bio,
       })
@@ -53,8 +66,13 @@ export default function ProfilePage() {
       setSuccess(true);
       refetchProfile?.();
       setTimeout(() => setSuccess(false), 3000);
+    } else {
+      // Postgres unique_violation error code
+      if (error.code === '23505') {
+        setErrorMsg(t("username_taken") || "Cet identifiant est déjà utilisé");
       } else {
-      alert((t("error") || "Erreur") + " : " + error.message);
+        setErrorMsg((t("error") || "Erreur") + " : " + error.message);
+      }
     }
   };
 
@@ -112,17 +130,24 @@ export default function ProfilePage() {
             </div>
           )}
 
+          {errorMsg && (
+            <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl text-sm text-center">
+              {errorMsg}
+            </div>
+          )}
+
           <form onSubmit={handleSave} className="space-y-4">
-            {/* Username (readonly) */}
+            {/* Username (Editable) */}
             <div className="space-y-1">
-              <label className="text-xs text-zinc-400 font-medium ml-1 uppercase tracking-wider">{t("username_readonly") || "Identifiant (non modifiable)"}</label>
+              <label className="text-xs text-zinc-400 font-medium ml-1 uppercase tracking-wider">Identifiant (URL publique)</label>
               <div className="relative">
-                <User size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-600" />
+                <Link2 size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
                 <input
                   type="text"
-                  value={profile?.username || ""}
-                  readOnly
-                  className="w-full bg-white/[0.02] border border-white/5 rounded-xl py-3 pl-10 pr-4 text-sm text-zinc-600 cursor-not-allowed"
+                  value={formData.username}
+                  onChange={(e) => setFormData({ ...formData, username: e.target.value.toLowerCase().replace(/\s/g, '-') })}
+                  className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-sm focus:outline-none focus:border-white/30 focus:bg-white/10 transition-all text-white"
+                  placeholder="votre-nom"
                 />
               </div>
             </div>
@@ -136,7 +161,7 @@ export default function ProfilePage() {
                   type="text"
                   value={formData.display_name}
                   onChange={(e) => setFormData({ ...formData, display_name: e.target.value })}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-sm focus:outline-none focus:border-white/30 focus:bg-white/10 transition-all"
+                  className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-sm focus:outline-none focus:border-white/30 focus:bg-white/10 transition-all text-white"
                   placeholder={t("name_placeholder") || "Jean Dupont"}
                 />
               </div>
@@ -165,7 +190,7 @@ export default function ProfilePage() {
                   value={formData.bio}
                   onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
                   rows={3}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-sm focus:outline-none focus:border-white/30 focus:bg-white/10 transition-all resize-none"
+                  className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-sm focus:outline-none focus:border-white/30 focus:bg-white/10 transition-all resize-none text-white"
                   placeholder={t("bio_placeholder") || "Une courte description de vous..."}
                 />
               </div>
@@ -192,3 +217,4 @@ export default function ProfilePage() {
     </div>
   );
 }
+
