@@ -1,5 +1,5 @@
 import React from 'react';
-import { Video, Camera, Tv, Save, Mail, Globe, Youtube, Instagram, Music2, Share2, MapPin } from 'lucide-react';
+import { Video, Camera, Tv, Save, Mail, Globe, Music2, Share2, MapPin } from 'lucide-react';
 
 interface Props {
   data: any;
@@ -15,8 +15,8 @@ export default function TemplateCreator({ data }: Props) {
 
   const getPlatformIcon = (platform: string) => {
     const p = platform.toLowerCase();
-    if (p.includes('youtube')) return <Youtube size={18} className="text-red-500 drop-shadow-[0_0_8px_rgba(239,68,68,0.8)]" />;
-    if (p.includes('insta')) return <Instagram size={18} className="text-pink-500 drop-shadow-[0_0_8px_rgba(236,72,153,0.8)]" />;
+    if (p.includes('youtube')) return <Video size={18} className="text-red-500 drop-shadow-[0_0_8px_rgba(239,68,68,0.8)]" />;
+    if (p.includes('insta')) return <Camera size={18} className="text-pink-500 drop-shadow-[0_0_8px_rgba(236,72,153,0.8)]" />;
     if (p.includes('tiktok')) return <Music2 size={18} className="text-cyan-400 drop-shadow-[0_0_8px_rgba(34,211,238,0.8)]" />;
     if (p.includes('twitch')) return <Tv size={18} className="text-purple-500 drop-shadow-[0_0_8px_rgba(168,85,247,0.8)]" />;
     return <Share2 size={18} className="text-blue-400 drop-shadow-[0_0_8px_rgba(96,165,250,0.8)]" />;

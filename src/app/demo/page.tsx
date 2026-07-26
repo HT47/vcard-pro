@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Smartphone, Share2, Save, X, Edit3, Eye, UploadCloud, CheckCircle2, Settings2, Plus, Trash2, Link as LinkIcon, Briefcase, Calendar, Building, Activity, CreditCard, Wind, Layers, LayoutTemplate, Box, LayoutDashboard, User, Hexagon, Sun, Star, Tag, Home, LayoutGrid, ArrowRight, Palette, ChevronDown, List, Hash, Utensils, Info, ImageIcon } from "lucide-react";
+import { Smartphone, Share2, Save, X, Edit3, Eye, UploadCloud, CheckCircle2, Settings2, Plus, Trash2, Link as LinkIcon, Briefcase, Calendar, Building, Activity, CreditCard, Wind, Layers, LayoutTemplate, Box, LayoutDashboard, User, Hexagon, Sun, Star, Tag, Home, LayoutGrid, ArrowRight, Palette, ChevronDown, List, Hash, Utensils, Info, ImageIcon, Search, Camera, Globe } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { QRCodeSVG } from "qrcode.react";
@@ -13,6 +13,14 @@ import { supabase } from "@/lib/supabase";
 // Existing Templates
 import BusinessCardV1 from "@/components/templates/BusinessCardV1";
 import BusinessCardV2 from "@/components/templates/BusinessCardV2";
+import TemplateDoctor from "@/components/templates/TemplateDoctor";
+import TemplateLawyer from "@/components/templates/TemplateLawyer";
+import TemplateBeauty from "@/components/templates/TemplateBeauty";
+import TemplateDentist from "@/components/templates/TemplateDentist";
+import TemplateElectrician from "@/components/templates/TemplateElectrician";
+import TemplatePlumber from "@/components/templates/TemplatePlumber";
+import TemplateAssistant from "@/components/templates/TemplateAssistant";
+import TemplateTravel from "@/components/templates/TemplateTravel";
 import DailySchedule from "@/components/templates/DailySchedule";
 import WeeklyEvents from "@/components/templates/WeeklyEvents";
 import YogaPoster from "@/components/templates/YogaPoster";
@@ -125,6 +133,7 @@ export default function DemoBuilder() {
   // MOBILE PRO MAX: Active Panel state ('none' means full live preview)
   const [activePanel, setActivePanel] = useState<"none" | "design" | "profile" | "links">("none");
   const [activeCategoryTab, setActiveCategoryTab] = useState(t("category_cards") || "Cartes & Profils");
+  const [templateSearchQuery, setTemplateSearchQuery] = useState("");
   const [isPublishing, setIsPublishing] = useState(false);
   const [publishedSlug, setPublishedSlug] = useState<string | null>(null);
   const [publishedUsername, setPublishedUsername] = useState<string | null>(null);
@@ -549,6 +558,14 @@ export default function DemoBuilder() {
       case 'pro-freelance-dark': return <TemplateFreelanceDark {...props} />;
       case 'pro-coach-warm': return <TemplateCoachWarm {...props} />;
       case 'pro-restaurant-adv': return <TemplateRestaurantAdvanced {...props} />;
+      case 'pro-lawyer': return <TemplateLawyer {...props} />;
+      case 'pro-doctor': return <TemplateDoctor {...props} />;
+      case 'pro-dentist': return <TemplateDentist {...props} />;
+      case 'pro-beauty': return <TemplateBeauty {...props} />;
+      case 'pro-electrician': return <TemplateElectrician {...props} />;
+      case 'pro-plumber': return <TemplatePlumber {...props} />;
+      case 'pro-assistant': return <TemplateAssistant {...props} />;
+      case 'pro-travel': return <TemplateTravel {...props} />;
       case 'link-tree': return <LinkInBioTree {...props} />;
       case 'link-beacons': return <LinkInBioBeacons {...props} />;
       case 'link-biosites': return <LinkInBioSites {...props} />;
@@ -577,101 +594,180 @@ export default function DemoBuilder() {
   const LayoutSelector = () => {
     const categories = [
       {
-        name: t("category_links") || 'Liens en Bio',
+        name: 'Général & Bio',
         icon: <LinkIcon size={16} className="text-purple-400" />,
         layouts: [
           { id: 'link-tree', label: 'Classic Tree', icon: <Box size={20} strokeWidth={1.5} /> },
           { id: 'link-beacons', label: 'Creator Pro', icon: <Star size={20} strokeWidth={1.5} /> },
           { id: 'link-biosites', label: 'Minimal Site', icon: <LayoutTemplate size={20} strokeWidth={1.5} /> },
-        ]
-      },
-      {
-        name: t("category_cards") || 'Cartes & Profils',
-        icon: <Briefcase size={16} className="text-blue-400" />,
-        layouts: [
           { id: 'structure-pro', label: 'Structure', icon: <LayoutDashboard size={20} strokeWidth={1.5} /> },
           { id: 'classic-pro', label: 'Classic Pro', icon: <CreditCard size={20} strokeWidth={1.5} /> },
           { id: 'wave-pro', label: 'Wave Pro', icon: <Wind size={20} strokeWidth={1.5} /> },
           { id: 'glass-pro', label: 'Glass Pro', icon: <Layers size={20} strokeWidth={1.5} /> },
           { id: 'freelance-pro', label: 'Freelance', icon: <User size={20} strokeWidth={1.5} /> },
+        ]
+      },
+      {
+        name: 'Entreprise & Business',
+        icon: <Briefcase size={16} className="text-blue-400" />,
+        layouts: [
           { id: 'pro-v1', label: 'Corporate', icon: <Briefcase size={20} strokeWidth={1.5} /> },
           { id: 'pro-v2', label: 'Executive', icon: <Briefcase size={20} strokeWidth={1.5} /> },
           { id: 'pro-v3', label: 'Geometric', icon: <Hexagon size={20} strokeWidth={1.5} /> },
           { id: 'pro-v4', label: 'Bright', icon: <Sun size={20} strokeWidth={1.5} /> },
           { id: 'pro-entrepreneur', label: 'Entrepreneur', icon: <Briefcase size={20} strokeWidth={1.5} /> },
+          { id: 'pro-lawyer', label: 'Avocat', icon: <Briefcase size={20} strokeWidth={1.5} /> },
+          { id: 'pro-assistant', label: 'Assistante', icon: <User size={20} strokeWidth={1.5} /> },
+        ]
+      },
+      {
+        name: 'Santé & Beauté',
+        icon: <Activity size={16} className="text-pink-400" />,
+        layouts: [
+          { id: 'pro-doctor', label: 'Médecin', icon: <Activity size={20} strokeWidth={1.5} /> },
+          { id: 'pro-dentist', label: 'Dentiste', icon: <Activity size={20} strokeWidth={1.5} /> },
+          { id: 'pro-beauty', label: 'Coiffeuse', icon: <Palette size={20} strokeWidth={1.5} /> },
+        ]
+      },
+      {
+        name: 'Artisans & BTP',
+        icon: <Settings2 size={16} className="text-yellow-400" />,
+        layouts: [
+          { id: 'pro-electrician', label: 'Électricien', icon: <Settings2 size={20} strokeWidth={1.5} /> },
+          { id: 'pro-plumber', label: 'Plombier', icon: <Wind size={20} strokeWidth={1.5} /> },
+        ]
+      },
+      {
+        name: 'Créatifs & Événements',
+        icon: <Camera size={16} className="text-indigo-400" />,
+        layouts: [
           { id: 'pro-creator', label: 'Créateur', icon: <User size={20} strokeWidth={1.5} /> },
-          { id: 'pro-restaurant-adv', label: 'Resto App', icon: <Utensils size={20} strokeWidth={1.5} /> },
           { id: 'pro-freelance-dark', label: 'Designer', icon: <Palette size={20} strokeWidth={1.5} /> },
-          { id: 'pro-coach-warm', label: 'Coach', icon: <User size={20} strokeWidth={1.5} /> },
+          { id: 'pro-photographer', label: 'Photographe', icon: <Camera size={20} strokeWidth={1.5} /> },
+          { id: 'agenda-jour', label: 'Agenda Jour', icon: <Calendar size={20} strokeWidth={1.5} /> },
+          { id: 'agenda-semaine', label: 'Agenda Semaine', icon: <Calendar size={20} strokeWidth={1.5} /> },
+        ]
+      },
+      {
+        name: 'Restauration & Commerce',
+        icon: <Utensils size={16} className="text-orange-400" />,
+        layouts: [
+          { id: 'pro-restaurant-adv', label: 'Resto App', icon: <Utensils size={20} strokeWidth={1.5} /> },
           { id: 'pro-restaurant', label: 'Resto Simple', icon: <Utensils size={20} strokeWidth={1.5} /> },
           { id: 'pro-resto-owner', label: 'Propriétaire', icon: <User size={20} strokeWidth={1.5} /> },
+          { id: 'pro-grocery', label: 'Épicerie', icon: <Utensils size={20} strokeWidth={1.5} /> },
         ]
       },
       {
-        name: t("category_realestate") || 'Immobilier',
-        icon: <Building size={16} className="text-orange-400" />,
+        name: 'Immobilier & Voyage',
+        icon: <Building size={16} className="text-emerald-400" />,
         layouts: [
-          { id: 'immo-simple', label: 'Simple', icon: <Home size={20} strokeWidth={1.5} /> },
-          { id: 'immo-modern', label: 'Modern', icon: <Building size={20} strokeWidth={1.5} /> },
-          { id: 'immo-grid', label: 'Grid', icon: <LayoutGrid size={20} strokeWidth={1.5} /> }
+          { id: 'immo-simple', label: 'Immo Simple', icon: <Home size={20} strokeWidth={1.5} /> },
+          { id: 'immo-modern', label: 'Immo Modern', icon: <Building size={20} strokeWidth={1.5} /> },
+          { id: 'immo-grid', label: 'Immo Grid', icon: <LayoutGrid size={20} strokeWidth={1.5} /> },
+          { id: 'pro-realestate2', label: 'Agence Immo', icon: <Building size={20} strokeWidth={1.5} /> },
+          { id: 'pro-travel', label: 'Voyage', icon: <Globe size={20} strokeWidth={1.5} /> },
         ]
       },
       {
-        name: t("category_events") || 'Agendas',
-        icon: <Calendar size={16} className="text-emerald-400" />,
+        name: 'Sport & Bien-être',
+        icon: <Activity size={16} className="text-cyan-400" />,
         layouts: [
-          { id: 'agenda-jour', label: 'Journée', icon: <Calendar size={20} strokeWidth={1.5} /> },
-          { id: 'agenda-semaine', label: 'Semaine', icon: <Calendar size={20} strokeWidth={1.5} /> },
+          { id: 'pro-coach-warm', label: 'Coach', icon: <User size={20} strokeWidth={1.5} /> },
+          { id: 'pro-fitness', label: 'Coach Sportif', icon: <Activity size={20} strokeWidth={1.5} /> },
         ]
       }
     ];
 
     return (
       <div className="space-y-4 w-full">
-        <div className="flex overflow-x-auto gap-1.5 p-1.5 bg-[#111] border border-white/5 rounded-2xl [&::-webkit-scrollbar]:hidden w-full ring-1 ring-white/10">
+        <div className="flex overflow-x-auto gap-1 p-1 bg-white/5 border border-white/10 rounded-2xl [&::-webkit-scrollbar]:hidden w-full relative">
           {categories.map((category) => {
-            const isActive = activeCategoryTab === category.name || (activeCategoryTab === 'Cartes & Profils' && category.name === 'Métiers Pro Max' && !categories.some(c=>c.name===activeCategoryTab));
+            const isActive = activeCategoryTab === category.name || (!categories.some(c=>c.name===activeCategoryTab) && category.name === 'Général & Bio');
             return (
               <button
                 key={category.name}
                 onClick={() => setActiveCategoryTab(category.name)}
-                className={`flex-1 min-w-fit flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl transition-all whitespace-nowrap ${isActive ? 'bg-white/10 text-white shadow-lg border border-white/5' : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.02]'}`}
+                className={`relative flex-1 min-w-fit flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl transition-all whitespace-nowrap z-10 ${isActive ? 'text-white' : 'text-zinc-500 hover:text-zinc-300'}`}
               >
-                <div className={`transition-colors ${isActive ? 'text-white' : 'text-zinc-500 group-hover:text-zinc-300'}`}>
+                {isActive && (
+                  <motion.div
+                    layoutId="activeCategoryTab"
+                    className="absolute inset-0 bg-[#222] border border-white/10 rounded-xl shadow-lg z-[-1]"
+                    transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                  />
+                )}
+                <div className={`transition-colors relative z-10 ${isActive ? 'text-white' : 'text-zinc-500 group-hover:text-zinc-300'}`}>
                   {category.icon}
                 </div>
-                <span className="text-[11px] font-bold uppercase tracking-wider">{category.name}</span>
+                <span className="text-[11px] font-bold uppercase tracking-wider relative z-10">{category.name}</span>
               </button>
             );
           })}
         </div>
+
+        {/* Search Bar */}
+        <div className="relative w-full">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <Search size={14} className="text-zinc-500" />
+          </div>
+          <input
+            type="text"
+            placeholder="Rechercher un template..."
+            value={templateSearchQuery}
+            onChange={(e) => setTemplateSearchQuery(e.target.value)}
+            className="w-full bg-[#111] border border-white/5 rounded-xl pl-9 pr-4 py-2.5 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-white/20 focus:ring-1 focus:ring-white/10 transition-all"
+          />
+          {templateSearchQuery && (
+            <button 
+              onClick={() => setTemplateSearchQuery("")}
+              className="absolute inset-y-0 right-0 pr-3 flex items-center text-zinc-500 hover:text-white"
+            >
+              <X size={14} />
+            </button>
+          )}
+        </div>
+
         <div className="pt-2">
-          {categories.filter(c => c.name === activeCategoryTab || (activeCategoryTab === 'Cartes & Profils' && c.name === 'Métiers Pro Max')).map((category) => (
-            <div key={category.name} className="grid grid-cols-3 lg:grid-cols-4 gap-2 animate-in fade-in slide-in-from-bottom-2 duration-300">
-              {category.layouts.map((layoutObj) => {
-                const isActive = formData.layout === layoutObj.id;
-                return (
-                  <motion.button
-                    key={layoutObj.id}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => setFormData(prev => ({ ...prev, layout: layoutObj.id }))}
-                    className={`relative flex flex-col items-center justify-center p-3 rounded-xl border transition-all overflow-hidden group ${isActive ? 'bg-white/10 border-white shadow-md' : 'bg-white/[0.02] border-white/5 hover:bg-white/[0.05] hover:border-white/20'}`}
-                  >
-                    {isActive && (
-                      <div className="absolute top-1.5 right-1.5">
-                        <CheckCircle2 size={12} className="text-white drop-shadow-md" />
+          {(templateSearchQuery.trim()
+            ? categories.map(c => ({
+                ...c,
+                layouts: c.layouts.filter(l => l.label.toLowerCase().includes(templateSearchQuery.toLowerCase()))
+              })).filter(c => c.layouts.length > 0)
+            : categories.filter(c => c.name === activeCategoryTab || (!categories.some(cat=>cat.name===activeCategoryTab) && c.name === 'Général & Bio'))
+          ).map((category) => (
+            <div key={category.name} className="mb-4">
+              {templateSearchQuery.trim() && (
+                <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-2 px-1">
+                  {category.name}
+                </div>
+              )}
+              <div className="grid grid-cols-3 lg:grid-cols-4 gap-2 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                {category.layouts.map((layoutObj) => {
+                  const isActive = formData.layout === layoutObj.id;
+                  return (
+                    <motion.button
+                      key={layoutObj.id}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => setFormData(prev => ({ ...prev, layout: layoutObj.id }))}
+                      className={`relative flex flex-col items-center justify-center p-3 rounded-xl border transition-all overflow-hidden group ${isActive ? 'bg-white/10 border-white shadow-md' : 'bg-white/[0.02] border-white/5 hover:bg-white/[0.05] hover:border-white/20'}`}
+                    >
+                      {isActive && (
+                        <div className="absolute top-1.5 right-1.5">
+                          <CheckCircle2 size={12} className="text-white drop-shadow-md" />
+                        </div>
+                      )}
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center mb-2 transition-colors ${isActive ? 'bg-white text-black shadow-md' : 'bg-black/30 text-zinc-400 group-hover:text-white group-hover:bg-white/10 border border-white/5'}`}>
+                        <div className="scale-75">{layoutObj.icon}</div>
                       </div>
-                    )}
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center mb-2 transition-colors ${isActive ? 'bg-white text-black shadow-md' : 'bg-black/30 text-zinc-400 group-hover:text-white group-hover:bg-white/10 border border-white/5'}`}>
-                      <div className="scale-75">{layoutObj.icon}</div>
-                    </div>
-                    <span className={`text-[9px] font-bold uppercase tracking-wider text-center ${isActive ? 'text-white' : 'text-zinc-500 group-hover:text-zinc-300'}`}>
-                      {layoutObj.label}
-                    </span>
-                  </motion.button>
-                );
-              })}
+                      <span className={`text-[9px] font-bold uppercase tracking-wider text-center ${isActive ? 'text-white' : 'text-zinc-500 group-hover:text-zinc-300'}`}>
+                        {layoutObj.label}
+                      </span>
+                    </motion.button>
+                  );
+                })}
+              </div>
             </div>
           ))}
         </div>

@@ -190,6 +190,7 @@ export default function TemplateRestaurantAdvanced({ data }: Props) {
                 </div>
               ))}
             </div>
+          </div>
         )}
 
         {activeTab === 'Spécialités' && (

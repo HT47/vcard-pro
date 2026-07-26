@@ -1,5 +1,5 @@
 import React from 'react';
-import { Phone, Mail, MapPin, Globe, Save, Camera, Instagram, Facebook } from 'lucide-react';
+import { Phone, Mail, MapPin, Globe, Save, Camera, Users, MessageCircle } from 'lucide-react';
 
 interface Props {
   data: any;
@@ -90,13 +90,13 @@ export default function TemplateRestaurant({ data }: Props) {
         {/* Social Icons */}
         <div className="flex justify-center gap-4">
           <a href="#" className="w-12 h-12 rounded-full bg-white shadow-md border border-black/5 flex items-center justify-center text-zinc-600 hover:scale-110 hover:text-white transition-all duration-300 group">
-            <Instagram size={20} className="group-hover:hidden" />
-            <Instagram size={20} className="hidden group-hover:block" />
+            <Camera size={20} className="group-hover:hidden" />
+            <Camera size={20} className="hidden group-hover:block" />
             <div className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity -z-10" style={{ background: primaryColor }}></div>
           </a>
           <a href="#" className="w-12 h-12 rounded-full bg-white shadow-md border border-black/5 flex items-center justify-center text-zinc-600 hover:scale-110 hover:text-white transition-all duration-300 group">
-            <Facebook size={20} className="group-hover:hidden" />
-            <Facebook size={20} className="hidden group-hover:block" />
+            <Users size={20} className="group-hover:hidden" />
+            <Users size={20} className="hidden group-hover:block" />
             <div className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity -z-10" style={{ background: primaryColor }}></div>
           </a>
         </div>
