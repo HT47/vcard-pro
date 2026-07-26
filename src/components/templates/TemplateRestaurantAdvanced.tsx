@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Phone, MapPin, Globe, Calendar, Facebook, Instagram, Share2, UserPlus, QrCode, ShoppingCart, ChevronRight, Info, Utensils, Star, Image as ImageIcon, Heart } from 'lucide-react';
+import { Phone, MapPin, Globe, Calendar, Users, Camera, Share2, UserPlus, QrCode, ShoppingCart, ChevronRight, Info, Utensils, Star, Image as ImageIcon, Heart, Mail } from 'lucide-react';
 
 interface Props {
   data: any;
@@ -36,8 +36,8 @@ export default function TemplateRestaurantAdvanced({ data }: Props) {
         <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/60 to-[#111]"></div>
         
         <div className="absolute top-4 right-4 bg-white/10 backdrop-blur-md border border-white/20 px-3 py-1 rounded-full flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-green-500"></div>
-          <span className="text-xs font-bold text-white">Ouvert</span>
+          <div className={`w-2 h-2 rounded-full ${data.isOpen !== false ? 'bg-green-500' : 'bg-red-500'}`}></div>
+          <span className="text-xs font-bold text-white">{data.isOpen !== false ? 'Ouvert' : 'Fermé'}</span>
         </div>
 
         {/* Logo and Titles */}
@@ -116,25 +116,23 @@ export default function TemplateRestaurantAdvanced({ data }: Props) {
 
             <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
               <h3 className="font-serif text-xl font-bold mb-3" style={{ color: accentColor }}>À propos de nous</h3>
-              <p className="text-sm text-zinc-400 leading-relaxed mb-6">
-                Le Goût Restaurant vous accueille dans un cadre chaleureux pour vous faire découvrir une cuisine raffinée préparée avec des produits frais et locaux.
+              <p className="text-sm text-zinc-400 leading-relaxed mb-6 whitespace-pre-wrap">
+                {data.bio || "Le Goût Restaurant vous accueille dans un cadre chaleureux pour vous faire découvrir une cuisine raffinée préparée avec des produits frais et locaux."}
               </p>
               
               <div className="grid grid-cols-3 gap-4">
-                <div className="text-center">
-                  <div className="text-lg font-bold text-white flex items-center justify-center gap-1">
-                    4.8 <Star size={14} style={{ color: accentColor, fill: accentColor }} />
+                {(data.restaurantStats || [
+                  { value: "4.8", label: "Avis Google" },
+                  { value: "1500+", label: "Clients" },
+                  { value: "15+", label: "Années d'exp." }
+                ]).map((stat: any, idx: number) => (
+                  <div key={idx} className="text-center">
+                    <div className="text-lg font-bold text-white flex items-center justify-center gap-1">
+                      {stat.value} {stat.label.toLowerCase().includes("avis") && <Star size={14} style={{ color: accentColor, fill: accentColor }} />}
+                    </div>
+                    <div className="text-[10px] text-zinc-500 uppercase">{stat.label}</div>
                   </div>
-                  <div className="text-[10px] text-zinc-500 uppercase">Avis Google</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-lg font-bold text-white">1500+</div>
-                  <div className="text-[10px] text-zinc-500 uppercase">Clients</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-lg font-bold text-white">15+</div>
-                  <div className="text-[10px] text-zinc-500 uppercase">Années d'exp.</div>
-                </div>
+                ))}
               </div>
             </div>
           </div>
@@ -191,6 +189,96 @@ export default function TemplateRestaurantAdvanced({ data }: Props) {
                   </div>
                 </div>
               ))}
+            </div>
+        )}
+
+        {activeTab === 'Spécialités' && (
+          <div className="min-h-full">
+            <div className="p-6 text-center">
+              <h2 className="text-2xl font-serif font-bold text-zinc-900 mb-2">Spécialités du Chef</h2>
+              <div className="flex items-center justify-center gap-4 mb-6">
+                <div className="h-px bg-zinc-300 flex-1"></div>
+                <Star size={14} className="text-zinc-400" />
+                <div className="h-px bg-zinc-300 flex-1"></div>
+              </div>
+            </div>
+            <div className="px-4 space-y-4">
+              {menuItems.filter((i: any) => i.isChef).length > 0 ? menuItems.filter((i: any) => i.isChef).map((item: any) => (
+                <div key={item.id} className="flex gap-4 p-3 bg-white rounded-2xl shadow-sm border border-zinc-100 relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-16 h-16 bg-orange-100 rotate-45 translate-x-8 -translate-y-8 z-0"></div>
+                  <Star size={12} className="absolute top-2 right-2 text-orange-500 z-10" fill="currentColor" />
+                  
+                  <div className="w-24 h-24 rounded-xl overflow-hidden flex-shrink-0 bg-zinc-100 z-10">
+                    <img src={item.img} alt={item.name} className="w-full h-full object-cover" />
+                  </div>
+                  <div className="flex-1 flex flex-col justify-between py-1 z-10">
+                    <div>
+                      <div className="flex justify-between items-start mb-1">
+                        <h3 className="font-bold text-sm text-zinc-900 leading-tight pr-4">{item.name}</h3>
+                        <span className="font-bold text-sm" style={{ color: accentColor }}>{item.price}</span>
+                      </div>
+                      <p className="text-xs text-zinc-500 leading-snug line-clamp-2">{item.desc}</p>
+                    </div>
+                  </div>
+                </div>
+              )) : (
+                <div className="text-center text-zinc-500 py-10">Aucune spécialité définie.</div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'Boissons' && (
+          <div className="min-h-full">
+            <div className="p-6 text-center">
+              <h2 className="text-2xl font-serif font-bold text-zinc-900 mb-2">Nos Boissons</h2>
+              <div className="flex items-center justify-center gap-4 mb-6">
+                <div className="h-px bg-zinc-300 flex-1"></div>
+                <Utensils size={14} className="text-zinc-400" />
+                <div className="h-px bg-zinc-300 flex-1"></div>
+              </div>
+            </div>
+            <div className="px-4 space-y-4">
+              {menuItems.filter((i: any) => i.category.toLowerCase() === 'boissons' || i.category.toLowerCase() === 'boisson').length > 0 ? menuItems.filter((i: any) => i.category.toLowerCase() === 'boissons' || i.category.toLowerCase() === 'boisson').map((item: any) => (
+                <div key={item.id} className="flex gap-4 p-3 bg-white rounded-2xl shadow-sm border border-zinc-100">
+                  <div className="w-20 h-20 rounded-xl overflow-hidden flex-shrink-0 bg-zinc-100">
+                    <img src={item.img} alt={item.name} className="w-full h-full object-cover" />
+                  </div>
+                  <div className="flex-1 flex flex-col justify-between py-1">
+                    <div>
+                      <div className="flex justify-between items-start mb-1">
+                        <h3 className="font-bold text-sm text-zinc-900 leading-tight">{item.name}</h3>
+                        <span className="font-bold text-sm" style={{ color: accentColor }}>{item.price}</span>
+                      </div>
+                      <p className="text-xs text-zinc-500 leading-snug line-clamp-2">{item.desc}</p>
+                    </div>
+                  </div>
+                </div>
+              )) : (
+                <div className="text-center text-zinc-500 py-10">Aucune boisson à la carte.</div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'Galerie' && (
+          <div className="min-h-full">
+            <div className="p-6 text-center pb-2">
+              <h2 className="text-2xl font-serif font-bold text-zinc-900 mb-2">Galerie</h2>
+              <div className="flex items-center justify-center gap-4 mb-4">
+                <div className="h-px bg-zinc-300 flex-1"></div>
+                <ImageIcon size={14} className="text-zinc-400" />
+                <div className="h-px bg-zinc-300 flex-1"></div>
+              </div>
+            </div>
+            <div className="px-4 grid grid-cols-2 gap-2">
+              {(data.gallery && data.gallery.length > 0) ? data.gallery.map((item: any) => (
+                <div key={item.id} className="aspect-square rounded-xl overflow-hidden bg-zinc-100 shadow-sm border border-zinc-200">
+                  {item.img && <img src={item.img} alt="Galerie" className="w-full h-full object-cover hover:scale-105 transition-transform duration-300" />}
+                </div>
+              )) : (
+                <div className="col-span-2 text-center text-zinc-500 py-10">Aucune photo dans la galerie.</div>
+              )}
             </div>
           </div>
         )}

@@ -7,7 +7,7 @@ import { supabase } from "@/lib/supabase";
 import { useI18n } from "@/context/I18nContext";
 import {
   LayoutDashboard, Settings, LogOut, Copy, CheckCircle2,
-  ExternalLink, PlusCircle, Trash2, Eye, QrCode, Share2, User
+  ExternalLink, PlusCircle, Trash2, Eye, QrCode, Share2, User, Edit3
 } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import Link from "next/link";
@@ -323,6 +323,13 @@ export default function Dashboard() {
                         {t("primary") || "Principale"}
                       </button>
                     )}
+                    <a
+                      href={`/demo?edit=${vcard.id}`}
+                      className="p-2 bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/20 rounded-xl transition-colors text-purple-400"
+                      title={t("edit_vcard") || "Modifier la vCard"}
+                    >
+                      <Edit3 size={16} />
+                    </a>
                     <button
                       onClick={() => {
                         setEditingVcard(vcard);

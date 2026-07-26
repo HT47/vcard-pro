@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Smartphone, Share2, Save, X, Edit3, Eye, UploadCloud, CheckCircle2, Settings2, Plus, Trash2, Link as LinkIcon, Briefcase, Calendar, Building, Activity, CreditCard, Wind, Layers, LayoutTemplate, Box, LayoutDashboard, User, Hexagon, Sun, Star, Tag, Home, LayoutGrid, ArrowRight, Palette, ChevronDown, List, Hash, Utensils } from "lucide-react";
+import { Smartphone, Share2, Save, X, Edit3, Eye, UploadCloud, CheckCircle2, Settings2, Plus, Trash2, Link as LinkIcon, Briefcase, Calendar, Building, Activity, CreditCard, Wind, Layers, LayoutTemplate, Box, LayoutDashboard, User, Hexagon, Sun, Star, Tag, Home, LayoutGrid, ArrowRight, Palette, ChevronDown, List, Hash, Utensils, Info, ImageIcon } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { QRCodeSVG } from "qrcode.react";
@@ -143,6 +143,17 @@ export default function DemoBuilder() {
     theme: THEMES[0],
     layout: 'classic-pro',
     mode: 'dark',
+    isOpen: true,
+    restaurantStats: [
+      { id: "1", value: "4.8", label: "Avis Google" },
+      { id: "2", value: "1500+", label: "Clients" },
+      { id: "3", value: "15+", label: "Années d'exp." }
+    ],
+    gallery: [
+      { id: "1", img: "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&w=400&q=80" },
+      { id: "2", img: "https://images.unsplash.com/photo-1550966871-3ed3cdb5ed0c?auto=format&fit=crop&w=400&q=80" },
+      { id: "3", img: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=400&q=80" }
+    ],
     avatarUrl: "",
     coverUrl: "",
     quote: "Développez votre potentiel, transformez votre vie.",
@@ -200,8 +211,10 @@ export default function DemoBuilder() {
     }
   });
 
+  const [editVcardId, setEditVcardId] = useState<string | null>(null);
+
   useEffect(() => {
-    const fetchUser = async () => {
+    const fetchUserAndEditData = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
         const { data: profileData } = await supabase
@@ -213,8 +226,29 @@ export default function DemoBuilder() {
           setFormData(prev => ({ ...prev, username: profileData.username }));
         }
       }
+
+      if (typeof window !== "undefined") {
+        const urlParams = new URLSearchParams(window.location.search);
+        const editId = urlParams.get('edit');
+        if (editId && session) {
+          const { data: vcardData } = await supabase
+            .from('vcards')
+            .select('*')
+            .eq('id', editId)
+            .eq('user_id', session.user.id)
+            .single();
+            
+          if (vcardData) {
+            setEditVcardId(vcardData.id);
+            setPublishedSlug(vcardData.slug);
+            if (vcardData.data) {
+              setFormData(vcardData.data);
+            }
+          }
+        }
+      }
     };
-    fetchUser();
+    fetchUserAndEditData();
   }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -288,6 +322,25 @@ export default function DemoBuilder() {
     setFormData(prev => ({
       ...prev,
       menu: prev.menu.map(item => item.id === id ? { ...item, [field]: value } : item)
+    }));
+  };
+
+  const updateRestaurantStat = (id: string, field: string, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      restaurantStats: prev.restaurantStats.map(stat => stat.id === id ? { ...stat, [field]: value } : stat)
+    }));
+  };
+  const addGalleryImage = () => {
+    setFormData(prev => ({
+      ...prev,
+      gallery: [...prev.gallery, { id: Date.now().toString(), img: "" }]
+    }));
+  };
+  const removeGalleryImage = (id: string) => {
+    setFormData(prev => ({
+      ...prev,
+      gallery: prev.gallery.filter(item => item.id !== id)
     }));
   };
 
@@ -368,6 +421,49 @@ export default function DemoBuilder() {
     }
   };
 
+  const handleArrayImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, arrayName: 'menu' | 'gallery', itemId: string) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const compressedBase64 = await compressImage(file);
+      if (compressedBase64) {
+        setFormData(prev => ({
+          ...prev,
+          [arrayName]: (prev[arrayName] as any[]).map(item => item.id === itemId ? { ...item, img: compressedBase64 } : item)
+        }));
+      }
+
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        const fileExt = file.name.split('.').pop() || 'jpg';
+        const fileName = `${arrayName}_${itemId}_${Math.random().toString(36).substring(2)}.${fileExt}`;
+        const filePath = `${session.user.id}/${fileName}`;
+
+        const uploadFile = dataURLtoFile(compressedBase64, fileName);
+
+        const { error: uploadError } = await supabase.storage
+          .from('avatars')
+          .upload(filePath, uploadFile);
+
+        if (!uploadError) {
+          const { data: { publicUrl } } = supabase.storage
+            .from('avatars')
+            .getPublicUrl(filePath);
+
+          if (publicUrl) {
+            setFormData(prev => ({
+              ...prev,
+              [arrayName]: (prev[arrayName] as any[]).map(item => item.id === itemId ? { ...item, img: publicUrl } : item)
+            }));
+          }
+        }
+      }
+    } catch (err) {
+      console.error("Erreur de compression array image", err);
+    }
+  };
+
   const handlePublish = async () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) {
@@ -377,6 +473,17 @@ export default function DemoBuilder() {
 
     setIsPublishing(true);
     let slug = Math.random().toString(36).substring(2, 10);
+
+    if (editVcardId) {
+      const { error } = await supabase.from('vcards').update({ data: formData }).eq('id', editVcardId);
+      setIsPublishing(false);
+      if (!error) {
+         setPublishedSlug(publishedSlug || slug);
+      } else {
+         alert(t("error_publish") || 'Erreur lors de la publication : ' + error.message);
+      }
+      return;
+    }
 
     if (formData.username && formData.username.trim() !== '') {
       const usernameClean = formData.username.toLowerCase().replace(/[^a-z0-9-]/g, '');
@@ -470,19 +577,6 @@ export default function DemoBuilder() {
   const LayoutSelector = () => {
     const categories = [
       {
-        name: 'Métiers Pro Max',
-        icon: <Star size={16} className="text-yellow-400" />,
-        layouts: [
-          { id: 'pro-entrepreneur', label: 'Entrepreneur', icon: <Briefcase size={20} strokeWidth={1.5} /> },
-          { id: 'pro-creator', label: 'Créateur', icon: <User size={20} strokeWidth={1.5} /> },
-          { id: 'pro-restaurant-adv', label: 'Resto App', icon: <Utensils size={20} strokeWidth={1.5} /> },
-          { id: 'pro-freelance-dark', label: 'Designer', icon: <Palette size={20} strokeWidth={1.5} /> },
-          { id: 'pro-coach-warm', label: 'Coach', icon: <User size={20} strokeWidth={1.5} /> },
-          { id: 'pro-restaurant', label: 'Resto Simple', icon: <Utensils size={20} strokeWidth={1.5} /> },
-          { id: 'pro-resto-owner', label: 'Propriétaire', icon: <User size={20} strokeWidth={1.5} /> },
-        ]
-      },
-      {
         name: t("category_links") || 'Liens en Bio',
         icon: <LinkIcon size={16} className="text-purple-400" />,
         layouts: [
@@ -500,6 +594,13 @@ export default function DemoBuilder() {
           { id: 'wave-pro', label: 'Wave Pro', icon: <Wind size={20} strokeWidth={1.5} /> },
           { id: 'glass-pro', label: 'Glass Pro', icon: <Layers size={20} strokeWidth={1.5} /> },
           { id: 'freelance-pro', label: 'Freelance', icon: <User size={20} strokeWidth={1.5} /> },
+          { id: 'pro-entrepreneur', label: 'Entrepreneur', icon: <Briefcase size={20} strokeWidth={1.5} /> },
+          { id: 'pro-creator', label: 'Créateur', icon: <User size={20} strokeWidth={1.5} /> },
+          { id: 'pro-restaurant-adv', label: 'Resto App', icon: <Utensils size={20} strokeWidth={1.5} /> },
+          { id: 'pro-freelance-dark', label: 'Designer', icon: <Palette size={20} strokeWidth={1.5} /> },
+          { id: 'pro-coach-warm', label: 'Coach', icon: <User size={20} strokeWidth={1.5} /> },
+          { id: 'pro-restaurant', label: 'Resto Simple', icon: <Utensils size={20} strokeWidth={1.5} /> },
+          { id: 'pro-resto-owner', label: 'Propriétaire', icon: <User size={20} strokeWidth={1.5} /> },
         ]
       },
       {
@@ -820,6 +921,75 @@ export default function DemoBuilder() {
         </div>
       )}
 
+      {/* Spécifique Restaurant (Infos & Galerie) */}
+      {formData.layout === 'pro-restaurant-adv' && (
+        <div className="pt-8 border-t border-white/10 space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-[11px] font-bold uppercase tracking-widest text-zinc-500 flex items-center gap-2">
+              <Info size={14} /> Infos Restaurant
+            </h2>
+          </div>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between bg-white/[0.02] p-4 rounded-xl border border-white/10">
+              <span className="text-sm font-semibold text-white">Statut du restaurant</span>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" checked={formData.isOpen} onChange={(e) => setFormData(prev => ({ ...prev, isOpen: e.target.checked }))} className="sr-only peer" />
+                <div className="w-11 h-6 bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
+                <span className="ml-3 text-xs font-bold text-zinc-400 uppercase tracking-wider">{formData.isOpen ? "Ouvert" : "Fermé"}</span>
+              </label>
+            </div>
+            
+            <div className="bg-white/[0.02] p-4 rounded-xl border border-white/10 space-y-3">
+              <span className="text-xs font-semibold text-zinc-400">Statistiques (Avis, Clients...)</span>
+              {formData.restaurantStats.map((stat) => (
+                <div key={stat.id} className="flex gap-2 items-center">
+                  <input type="text" placeholder="Valeur (ex: 4.8)" value={stat.value} onChange={(e) => updateRestaurantStat(stat.id, "value", e.target.value)} className="w-1/3 bg-black/20 border border-white/10 rounded-lg px-2 py-2 text-sm text-white focus:outline-none" />
+                  <input type="text" placeholder="Label (ex: Avis Google)" value={stat.label} onChange={(e) => updateRestaurantStat(stat.id, "label", e.target.value)} className="flex-1 bg-black/20 border border-white/10 rounded-lg px-2 py-2 text-sm text-white focus:outline-none" />
+                </div>
+              ))}
+            </div>
+          </div>
+          
+          <div className="pt-4 flex items-center justify-between">
+            <h2 className="text-[11px] font-bold uppercase tracking-widest text-zinc-500 flex items-center gap-2">
+              <ImageIcon size={14} /> Galerie Photos
+            </h2>
+            <button onClick={addGalleryImage} className="flex items-center gap-1 text-[10px] font-bold bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg transition-colors">
+              <Plus size={12} /> {t("add") || "Ajouter"}
+            </button>
+          </div>
+          <div className="grid grid-cols-2 gap-3 mb-8">
+            {formData.gallery.map((item) => (
+              <div key={item.id} className="relative aspect-square rounded-xl overflow-hidden group border border-white/10 bg-white/5">
+                {item.img ? (
+                  <>
+                    <img src={item.img} className="w-full h-full object-cover" alt="Galerie" />
+                    <button onClick={() => removeGalleryImage(item.id)} className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                      <Trash2 size={12} />
+                    </button>
+                    <label className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center cursor-pointer transition-opacity text-white text-xs font-bold gap-1">
+                      <UploadCloud size={14} /> Modifier
+                      <input type="file" accept="image/*" onChange={(e) => handleArrayImageUpload(e, 'gallery', item.id)} className="hidden" />
+                    </label>
+                  </>
+                ) : (
+                  <>
+                    <button onClick={() => removeGalleryImage(item.id)} className="absolute top-2 right-2 p-1.5 bg-red-500/50 hover:bg-red-500 text-white rounded-lg z-10 transition-colors">
+                      <Trash2 size={12} />
+                    </button>
+                    <label className="flex flex-col items-center justify-center h-full w-full cursor-pointer text-zinc-400 hover:text-white transition-colors">
+                      <UploadCloud size={20} className="mb-1" />
+                      <span className="text-[10px] font-bold uppercase tracking-wider">Ajouter</span>
+                      <input type="file" accept="image/*" onChange={(e) => handleArrayImageUpload(e, 'gallery', item.id)} className="hidden" />
+                    </label>
+                  </>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Spécifique Restaurant (Menu) */}
       {formData.layout === 'pro-restaurant-adv' && (
         <div className="pt-8 border-t border-white/10 space-y-4">
@@ -840,13 +1010,35 @@ export default function DemoBuilder() {
                     <Trash2 size={14} />
                   </button>
                 </div>
+                <div className="flex items-center gap-2 mb-2">
+                  <label className="flex items-center gap-2 text-[10px] text-zinc-400 cursor-pointer font-bold uppercase tracking-wider">
+                    <input type="checkbox" checked={item.isChef || false} onChange={(e) => updateMenuItem(item.id, "isChef", e.target.checked)} className="accent-orange-500 rounded" />
+                    Spécialité du Chef
+                  </label>
+                </div>
                 <div className="grid grid-cols-2 gap-2">
                   <input type="text" placeholder="Catégorie (Entrées, Plats)" value={item.category} onChange={(e) => updateMenuItem(item.id, "category", e.target.value)} className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none" />
                   <input type="text" placeholder="Prix (ex: €14.90)" value={item.price} onChange={(e) => updateMenuItem(item.id, "price", e.target.value)} className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none" />
                 </div>
                 <input type="text" placeholder="Nom du plat" value={item.name} onChange={(e) => updateMenuItem(item.id, "name", e.target.value)} className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none" />
                 <textarea placeholder="Description" value={item.desc} onChange={(e) => updateMenuItem(item.id, "desc", e.target.value)} rows={2} className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none resize-none" />
-                <input type="text" placeholder="URL Image" value={item.img} onChange={(e) => updateMenuItem(item.id, "img", e.target.value)} className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none" />
+                
+                <div className="relative mt-2">
+                  {item.img ? (
+                     <div className="relative w-full h-32 rounded-lg overflow-hidden group border border-white/10">
+                       <img src={item.img} className="w-full h-full object-cover" alt="Plat" />
+                       <label className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center cursor-pointer transition-opacity text-white text-xs font-bold gap-1">
+                         <UploadCloud size={14} /> Modifier l'image
+                         <input type="file" accept="image/*" onChange={(e) => handleArrayImageUpload(e, 'menu', item.id)} className="hidden" />
+                       </label>
+                     </div>
+                  ) : (
+                    <label className="flex items-center justify-center gap-2 w-full h-12 bg-white/5 border border-dashed border-white/20 rounded-lg text-zinc-400 hover:text-white hover:bg-white/10 cursor-pointer transition-colors text-xs font-bold">
+                      <UploadCloud size={16} /> Ajouter une image
+                      <input type="file" accept="image/*" onChange={(e) => handleArrayImageUpload(e, 'menu', item.id)} className="hidden" />
+                    </label>
+                  )}
+                </div>
               </div>
             ))}
           </div>
