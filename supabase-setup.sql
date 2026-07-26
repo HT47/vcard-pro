@@ -82,9 +82,17 @@ CREATE POLICY "avatars_public_read" ON storage.objects
 -- Policy storage: upload par le propriétaire
 DROP POLICY IF EXISTS "avatars_owner_upload" ON storage.objects;
 CREATE POLICY "avatars_owner_upload" ON storage.objects
-  FOR INSERT WITH CHECK (
-    bucket_id = 'avatars' AND auth.uid()::text = (storage.foldername(name))[1]
-  );
+  FOR INSERT WITH CHECK (bucket_id = 'avatars' AND auth.uid() = owner);
+
+-- Policy storage: update par le propriétaire
+DROP POLICY IF EXISTS "avatars_owner_update" ON storage.objects;
+CREATE POLICY "avatars_owner_update" ON storage.objects
+  FOR UPDATE USING (bucket_id = 'avatars' AND auth.uid() = owner);
+
+-- Policy storage: delete par le propriétaire
+DROP POLICY IF EXISTS "avatars_owner_delete" ON storage.objects;
+CREATE POLICY "avatars_owner_delete" ON storage.objects
+  FOR DELETE USING (bucket_id = 'avatars' AND auth.uid() = owner);
 
 -- 8. TRIGGER auto-updated_at
 CREATE OR REPLACE FUNCTION public.update_updated_at()

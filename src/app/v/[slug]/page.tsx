@@ -172,13 +172,7 @@ END:VCARD`;
         </button>
       </div>
 
-      {/* Floating "Create your own" badge */}
-      <a 
-        href="/" 
-        className="fixed bottom-6 right-6 bg-black/80 backdrop-blur-md border border-white/20 text-white px-4 py-2.5 rounded-full text-xs font-bold shadow-2xl hover:scale-105 transition-transform"
-      >
-        {t("created_with") || "Créé avec"} <strong className="text-white">VCard Pro</strong> ⚡
-      </a>
+
     </div>
   );
 }

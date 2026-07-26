@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Smartphone, Share2, Save, X, Edit3, Eye, UploadCloud, CheckCircle2, Settings2, Plus, Trash2, Link as LinkIcon, Briefcase, Calendar, Building, Activity, CreditCard, Wind, Layers, LayoutTemplate, Box, LayoutDashboard, User, Hexagon, Sun, Star, Tag, Home, LayoutGrid, ArrowRight, Palette } from "lucide-react";
+import { Smartphone, Share2, Save, X, Edit3, Eye, UploadCloud, CheckCircle2, Settings2, Plus, Trash2, Link as LinkIcon, Briefcase, Calendar, Building, Activity, CreditCard, Wind, Layers, LayoutTemplate, Box, LayoutDashboard, User, Hexagon, Sun, Star, Tag, Home, LayoutGrid, ArrowRight, Palette, ChevronDown, List, Hash, Utensils } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { QRCodeSVG } from "qrcode.react";
@@ -10,6 +10,7 @@ import { useI18n } from "@/context/I18nContext";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { supabase } from "@/lib/supabase";
 
+// Existing Templates
 import BusinessCardV1 from "@/components/templates/BusinessCardV1";
 import BusinessCardV2 from "@/components/templates/BusinessCardV2";
 import DailySchedule from "@/components/templates/DailySchedule";
@@ -32,7 +33,16 @@ import LinkInBioTree from "@/components/templates/LinkInBioTree";
 import LinkInBioBeacons from "@/components/templates/LinkInBioBeacons";
 import LinkInBioSites from "@/components/templates/LinkInBioSites";
 
-// Compression d'image côté client pour économiser la bande passante et le stockage
+// NEW PRO MAX TEMPLATES
+import TemplateRestoOwner from "@/components/templates/TemplateRestoOwner";
+import TemplateEntrepreneur from "@/components/templates/TemplateEntrepreneur";
+import TemplateCreator from "@/components/templates/TemplateCreator";
+import TemplateRestaurant from "@/components/templates/TemplateRestaurant";
+import TemplateFreelanceDark from "@/components/templates/TemplateFreelanceDark";
+import TemplateCoachWarm from "@/components/templates/TemplateCoachWarm";
+import TemplateRestaurantAdvanced from "@/components/templates/TemplateRestaurantAdvanced";
+
+// Compression d'image côté client
 const compressImage = (file: File, maxWidth = 800, maxHeight = 800): Promise<string> => {
   return new Promise((resolve) => {
     const reader = new FileReader();
@@ -65,7 +75,6 @@ const compressImage = (file: File, maxWidth = 800, maxHeight = 800): Promise<str
           return;
         }
         ctx.drawImage(img, 0, 0, width, height);
-        // Compresser en JPEG 0.7
         const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
         resolve(dataUrl);
       };
@@ -112,7 +121,9 @@ const THEMES = [
 export default function DemoBuilder() {
   const { t, locale, translations, isRTL } = useI18n();
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<"edit" | "preview">("edit");
+  
+  // MOBILE PRO MAX: Active Panel state ('none' means full live preview)
+  const [activePanel, setActivePanel] = useState<"none" | "design" | "profile" | "links">("none");
   const [activeCategoryTab, setActiveCategoryTab] = useState(t("category_cards") || "Cartes & Profils");
   const [isPublishing, setIsPublishing] = useState(false);
   const [publishedSlug, setPublishedSlug] = useState<string | null>(null);
@@ -134,6 +145,13 @@ export default function DemoBuilder() {
     mode: 'dark',
     avatarUrl: "",
     coverUrl: "",
+    quote: "Développez votre potentiel, transformez votre vie.",
+    skills: ['Branding', 'UI/UX', 'Illustration', 'Print', 'Web Design'],
+    stats: [
+      { id: "1", platform: 'YouTube', count: '125K', label: 'Abonnés' },
+      { id: "2", platform: 'Instagram', count: '89K', label: 'Abonnés' },
+      { id: "3", platform: 'TikTok', count: '150K', label: 'Abonnés' }
+    ],
     socialLinks: [
       { id: "1", platform: "LinkedIn", url: "https://linkedin.com/in/alexandredubois" },
       { id: "2", platform: "Twitter", url: "https://twitter.com/alexdesign" }
@@ -151,6 +169,11 @@ export default function DemoBuilder() {
       { id: "1", day: "JEU.", date: "05", title: "Festival de musique", location: "ANYWHERE", time: "21H00 - MINUIT", desc: "Venez vibrer au rythme des meilleurs artistes locaux.", img: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=800&q=80" },
       { id: "2", day: "VEN.", date: "06", title: "Marché artisanal", location: "ANYWHERE", time: "9H00 - 12H00", desc: "Découvrez des créations uniques des artisans locaux.", img: "https://images.unsplash.com/photo-1533759413974-a7407c07e8a5?auto=format&fit=crop&w=800&q=80" },
       { id: "3", day: "SAM.", date: "07", title: "Cinéma en Pleine Air", location: "ANYWHERE", time: "21H - 23H30", desc: "Apportez vos couvertures pour une soirée cinéma en plein air !", img: "https://images.unsplash.com/photo-1595769816263-9b91059a8f4b?auto=format&fit=crop&w=800&q=80" },
+    ],
+    menu: [
+      { id: "1", name: "Carpaccio de Bœuf", desc: "Fines tranches de bœuf, roquette, parmesan.", price: "€14.90", category: "Entrées", img: "https://images.unsplash.com/photo-1529692236671-f1f6cf9683ba?auto=format&fit=crop&w=200&q=80" },
+      { id: "2", name: "Pâtes à la Truffe", desc: "Tagliatelles fraîches, crème de truffe, parmesan.", price: "€18.90", category: "Plats", isChef: true, img: "https://images.unsplash.com/photo-1473093295043-cdd812d0e601?auto=format&fit=crop&w=200&q=80" },
+      { id: "3", name: "Fondant au Chocolat", desc: "Cœur coulant, glace vanille, coulis de chocolat.", price: "€7.90", category: "Desserts", img: "https://images.unsplash.com/photo-1624353365286-3f8d62daad51?auto=format&fit=crop&w=200&q=80" }
     ],
     yoga: {
       title: "YOGA",
@@ -217,18 +240,54 @@ export default function DemoBuilder() {
       socialLinks: [...prev.socialLinks, { id: Date.now().toString(), platform: "Website", url: "" }]
     }));
   };
-
   const removeSocialLink = (id: string) => {
     setFormData(prev => ({
       ...prev,
       socialLinks: prev.socialLinks.filter(link => link.id !== id)
     }));
   };
-
   const updateSocialLink = (id: string, field: "platform" | "url", value: string) => {
     setFormData(prev => ({
       ...prev,
       socialLinks: prev.socialLinks.map(link => link.id === id ? { ...link, [field]: value } : link)
+    }));
+  };
+
+  const addStat = () => {
+    setFormData(prev => ({
+      ...prev,
+      stats: [...prev.stats, { id: Date.now().toString(), platform: "YouTube", count: "10K", label: "Abonnés" }]
+    }));
+  };
+  const removeStat = (id: string) => {
+    setFormData(prev => ({
+      ...prev,
+      stats: prev.stats.filter(stat => stat.id !== id)
+    }));
+  };
+  const updateStat = (id: string, field: string, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      stats: prev.stats.map(stat => stat.id === id ? { ...stat, [field]: value } : stat)
+    }));
+  };
+
+  const addMenuItem = () => {
+    setFormData(prev => ({
+      ...prev,
+      menu: [...prev.menu, { id: Date.now().toString(), name: "Nouveau plat", desc: "Description", price: "€10.00", category: "Plats", img: "" }]
+    }));
+  };
+  const removeMenuItem = (id: string) => {
+    setFormData(prev => ({
+      ...prev,
+      menu: prev.menu.filter(item => item.id !== id)
+    }));
+  };
+  const updateMenuItem = (id: string, field: string, value: string | boolean) => {
+    setFormData(prev => ({
+      ...prev,
+      menu: prev.menu.map(item => item.id === id ? { ...item, [field]: value } : item)
     }));
   };
 
@@ -238,14 +297,12 @@ export default function DemoBuilder() {
       scheduleData: prev.scheduleData.map(item => item.id === id ? { ...item, [field]: value } : item)
     }));
   };
-
   const addScheduleItem = () => {
     setFormData(prev => ({
       ...prev,
       scheduleData: [...prev.scheduleData, { id: Date.now().toString(), time: "18H", task: "Nouvelle tâche" }]
     }));
   };
-
   const removeScheduleItem = (id: string) => {
     setFormData(prev => ({
       ...prev,
@@ -259,14 +316,12 @@ export default function DemoBuilder() {
       eventData: prev.eventData.map(item => item.id === id ? { ...item, [field]: value } : item)
     }));
   };
-
   const addEventItem = () => {
     setFormData(prev => ({
       ...prev,
       eventData: [...prev.eventData, { id: Date.now().toString(), day: "DIM.", date: "08", title: "Nouvel événement", location: "Lieu", time: "20H00", desc: "Description", img: "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=800&q=80" }]
     }));
   };
-
   const removeEventItem = (id: string) => {
     setFormData(prev => ({
       ...prev,
@@ -279,20 +334,17 @@ export default function DemoBuilder() {
     if (!file) return;
 
     try {
-      // 1. Compresser et afficher instantanément l'image en Base64 (preview et fallback local robuste)
       const compressedBase64 = await compressImage(file);
       if (compressedBase64) {
         setFormData(prev => ({ ...prev, [field]: compressedBase64 }));
       }
 
-      // 2. Tenter de l'uploader sur Supabase Storage en arrière-plan si connecté
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
         const fileExt = file.name.split('.').pop() || 'jpg';
         const fileName = `${field}_${Math.random().toString(36).substring(2)}.${fileExt}`;
         const filePath = `${session.user.id}/${fileName}`;
 
-        // Convertir le base64 compressé en fichier pour l'upload Supabase
         const uploadFile = dataURLtoFile(compressedBase64, fileName);
 
         const { error: uploadError } = await supabase.storage
@@ -305,14 +357,11 @@ export default function DemoBuilder() {
             .getPublicUrl(filePath);
 
           if (publicUrl) {
-            // Remplacer le Base64 par l'URL publique Supabase une fois l'upload réussi
             setFormData(prev => ({ ...prev, [field]: publicUrl }));
           }
         } else {
-          console.warn("Supabase storage upload failed, keeping Base64 preview:", uploadError.message);
+          console.warn("Supabase storage upload failed:", uploadError.message);
         }
-      } else {
-        console.log("User not logged in, keeping local Base64 preview");
       }
     } catch (err) {
       console.error("Error in handleImageUpload:", err);
@@ -327,16 +376,40 @@ export default function DemoBuilder() {
     }
 
     setIsPublishing(true);
-    const slug = Math.random().toString(36).substring(2, 10);
+    let slug = Math.random().toString(36).substring(2, 10);
 
-    // Mettre à jour l'identifiant public (sous-domaine/username)
     if (formData.username && formData.username.trim() !== '') {
-      const usernameClean = formData.username.toLowerCase().replace(/\s/g, '-');
+      const usernameClean = formData.username.toLowerCase().replace(/[^a-z0-9-]/g, '');
       await supabase.from('profiles').update({ username: usernameClean }).eq('id', session.user.id);
       setPublishedUsername(usernameClean);
+      slug = usernameClean;
+      
+      const { data: existingVcard } = await supabase.from('vcards').select('id, user_id').eq('slug', slug).single();
+      if (existingVcard && existingVcard.user_id !== session.user.id) {
+         slug = `${slug}-${Math.random().toString(36).substring(2, 6)}`;
+      } else if (existingVcard && existingVcard.user_id === session.user.id) {
+         const { error } = await supabase.from('vcards').update({ data: formData }).eq('id', existingVcard.id);
+         setIsPublishing(false);
+         if (!error) setPublishedSlug(slug);
+         else alert(t("error_publish") || 'Erreur lors de la publication : ' + error.message);
+         return;
+      }
     } else {
       const { data: profileData } = await supabase.from('profiles').select('username').eq('id', session.user.id).single();
-      if (profileData?.username) setPublishedUsername(profileData.username);
+      if (profileData?.username) {
+        setPublishedUsername(profileData.username);
+        slug = profileData.username;
+        const { data: existingVcard } = await supabase.from('vcards').select('id, user_id').eq('slug', slug).single();
+        if (existingVcard && existingVcard.user_id !== session.user.id) {
+           slug = `${slug}-${Math.random().toString(36).substring(2, 6)}`;
+        } else if (existingVcard && existingVcard.user_id === session.user.id) {
+           const { error } = await supabase.from('vcards').update({ data: formData }).eq('id', existingVcard.id);
+           setIsPublishing(false);
+           if (!error) setPublishedSlug(slug);
+           else alert(t("error_publish") || 'Erreur lors de la publication : ' + error.message);
+           return;
+        }
+      }
     }
 
     const { count } = await supabase
@@ -359,123 +432,16 @@ export default function DemoBuilder() {
     }
   };
 
-  const LayoutSelector = () => {
-    const categories = [
-      {
-        name: t("category_links") || 'Liens en Bio',
-        icon: <LinkIcon size={16} className="text-purple-400" />,
-        layouts: [
-          { id: 'link-tree', label: 'Classic Tree', icon: <Box size={20} strokeWidth={1.5} /> },
-          { id: 'link-beacons', label: 'Creator Pro', icon: <Star size={20} strokeWidth={1.5} /> },
-          { id: 'link-biosites', label: 'Minimal Site', icon: <LayoutTemplate size={20} strokeWidth={1.5} /> },
-        ]
-      },
-      {
-        name: t("category_cards") || 'Cartes & Profils',
-        icon: <Briefcase size={16} className="text-blue-400" />,
-        layouts: [
-          { id: 'structure-pro', label: 'Structure', icon: <LayoutDashboard size={20} strokeWidth={1.5} /> },
-          { id: 'classic-pro', label: 'Classic Pro', icon: <CreditCard size={20} strokeWidth={1.5} /> },
-          { id: 'wave-pro', label: 'Wave Pro', icon: <Wind size={20} strokeWidth={1.5} /> },
-          { id: 'glass-pro', label: 'Glass Pro', icon: <Layers size={20} strokeWidth={1.5} /> },
-          { id: 'freelance-pro', label: 'Freelance', icon: <User size={20} strokeWidth={1.5} /> },
-          { id: 'pro-v1', label: 'Corporate', icon: <Briefcase size={20} strokeWidth={1.5} /> },
-          { id: 'pro-v2', label: 'Executive', icon: <Briefcase size={20} strokeWidth={1.5} /> },
-          { id: 'pro-v3', label: 'Geometric', icon: <Hexagon size={20} strokeWidth={1.5} /> },
-          { id: 'pro-v4', label: 'Bright', icon: <Sun size={20} strokeWidth={1.5} /> },
-        ]
-      },
-      {
-        name: t("category_events") || 'Agendas & Événements',
-        icon: <Calendar size={16} className="text-emerald-400" />,
-        layouts: [
-          { id: 'agenda-jour', label: 'Journée', icon: <Calendar size={20} strokeWidth={1.5} /> },
-          { id: 'agenda-semaine', label: 'Semaine', icon: <Calendar size={20} strokeWidth={1.5} /> },
-          { id: 'event-gradient', label: 'Gradient', icon: <Star size={20} strokeWidth={1.5} /> },
-          { id: 'event-retro', label: 'Retro', icon: <Tag size={20} strokeWidth={1.5} /> }
-        ]
-      },
-      {
-        name: t("category_realestate") || 'Immobilier',
-        icon: <Building size={16} className="text-orange-400" />,
-        layouts: [
-          { id: 'immo-simple', label: 'Simple', icon: <Home size={20} strokeWidth={1.5} /> },
-          { id: 'immo-modern', label: 'Modern', icon: <Building size={20} strokeWidth={1.5} /> },
-          { id: 'immo-grid', label: 'Grid', icon: <LayoutGrid size={20} strokeWidth={1.5} /> }
-        ]
-      },
-      {
-        name: t("category_fitness") || 'Fitness & Bien-être',
-        icon: <Activity size={16} className="text-rose-400" />,
-        layouts: [
-          { id: 'yoga-poster', label: 'Affiche', icon: <Activity size={20} strokeWidth={1.5} /> },
-          { id: 'yoga-schedule', label: 'Planning', icon: <Activity size={20} strokeWidth={1.5} /> }
-        ]
-      }
-    ];
-
-    return (
-      <div className="space-y-4 w-full">
-        {/* macOS Style Segmented Control */}
-        <div className="flex overflow-x-auto gap-1.5 p-1.5 bg-[#111] border border-white/5 rounded-2xl [&::-webkit-scrollbar]:hidden w-full ring-1 ring-white/10">
-          {categories.map((category) => {
-            const isActive = activeCategoryTab === category.name;
-            return (
-              <button
-                key={category.name}
-                onClick={() => setActiveCategoryTab(category.name)}
-                className={`flex-1 min-w-fit flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl transition-all whitespace-nowrap ${isActive ? 'bg-white/10 text-white shadow-lg border border-white/5' : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.02]'}`}
-              >
-                <div className={`transition-colors ${isActive ? 'text-white' : 'text-zinc-500 group-hover:text-zinc-300'}`}>
-                  {category.icon}
-                </div>
-                <span className="text-[11px] font-bold uppercase tracking-wider">{category.name}</span>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Tab Content */}
-        <div className="pt-2">
-          {categories.filter(c => c.name === activeCategoryTab).map((category) => (
-            <div key={category.name} className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 animate-in fade-in slide-in-from-bottom-2 duration-300">
-              {category.layouts.map((layoutObj) => {
-                const isActive = formData.layout === layoutObj.id;
-                return (
-                  <motion.button
-                    key={layoutObj.id}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => setFormData(prev => ({ ...prev, layout: layoutObj.id }))}
-                    className={`relative flex flex-col items-center justify-center p-3 rounded-xl border transition-all overflow-hidden group ${isActive ? 'bg-white/10 border-white shadow-md' : 'bg-white/[0.02] border-white/5 hover:bg-white/[0.05] hover:border-white/20'}`}
-                  >
-                    {isActive && (
-                      <div className="absolute top-1.5 right-1.5">
-                        <CheckCircle2 size={12} className="text-white drop-shadow-md" />
-                      </div>
-                    )}
-                    
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center mb-2 transition-colors ${isActive ? 'bg-white text-black shadow-md' : 'bg-black/30 text-zinc-400 group-hover:text-white group-hover:bg-white/10 border border-white/5'}`}>
-                      {/* Resize icon slightly */}
-                      <div className="scale-75">{layoutObj.icon}</div>
-                    </div>
-                    
-                    <span className={`text-[9px] font-bold uppercase tracking-wider text-center ${isActive ? 'text-white' : 'text-zinc-500 group-hover:text-zinc-300'}`}>
-                      {layoutObj.label}
-                    </span>
-                  </motion.button>
-                );
-              })}
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  };
-
   const renderTemplatePreview = () => {
     const props = { data: formData };
     switch (formData.layout) {
+      case 'pro-resto-owner': return <TemplateRestoOwner {...props} />;
+      case 'pro-entrepreneur': return <TemplateEntrepreneur {...props} />;
+      case 'pro-creator': return <TemplateCreator {...props} />;
+      case 'pro-restaurant': return <TemplateRestaurant {...props} />;
+      case 'pro-freelance-dark': return <TemplateFreelanceDark {...props} />;
+      case 'pro-coach-warm': return <TemplateCoachWarm {...props} />;
+      case 'pro-restaurant-adv': return <TemplateRestaurantAdvanced {...props} />;
       case 'link-tree': return <LinkInBioTree {...props} />;
       case 'link-beacons': return <LinkInBioBeacons {...props} />;
       case 'link-biosites': return <LinkInBioSites {...props} />;
@@ -501,10 +467,460 @@ export default function DemoBuilder() {
     }
   };
 
+  const LayoutSelector = () => {
+    const categories = [
+      {
+        name: 'Métiers Pro Max',
+        icon: <Star size={16} className="text-yellow-400" />,
+        layouts: [
+          { id: 'pro-entrepreneur', label: 'Entrepreneur', icon: <Briefcase size={20} strokeWidth={1.5} /> },
+          { id: 'pro-creator', label: 'Créateur', icon: <User size={20} strokeWidth={1.5} /> },
+          { id: 'pro-restaurant-adv', label: 'Resto App', icon: <Utensils size={20} strokeWidth={1.5} /> },
+          { id: 'pro-freelance-dark', label: 'Designer', icon: <Palette size={20} strokeWidth={1.5} /> },
+          { id: 'pro-coach-warm', label: 'Coach', icon: <User size={20} strokeWidth={1.5} /> },
+          { id: 'pro-restaurant', label: 'Resto Simple', icon: <Utensils size={20} strokeWidth={1.5} /> },
+          { id: 'pro-resto-owner', label: 'Propriétaire', icon: <User size={20} strokeWidth={1.5} /> },
+        ]
+      },
+      {
+        name: t("category_links") || 'Liens en Bio',
+        icon: <LinkIcon size={16} className="text-purple-400" />,
+        layouts: [
+          { id: 'link-tree', label: 'Classic Tree', icon: <Box size={20} strokeWidth={1.5} /> },
+          { id: 'link-beacons', label: 'Creator Pro', icon: <Star size={20} strokeWidth={1.5} /> },
+          { id: 'link-biosites', label: 'Minimal Site', icon: <LayoutTemplate size={20} strokeWidth={1.5} /> },
+        ]
+      },
+      {
+        name: t("category_cards") || 'Cartes & Profils',
+        icon: <Briefcase size={16} className="text-blue-400" />,
+        layouts: [
+          { id: 'structure-pro', label: 'Structure', icon: <LayoutDashboard size={20} strokeWidth={1.5} /> },
+          { id: 'classic-pro', label: 'Classic Pro', icon: <CreditCard size={20} strokeWidth={1.5} /> },
+          { id: 'wave-pro', label: 'Wave Pro', icon: <Wind size={20} strokeWidth={1.5} /> },
+          { id: 'glass-pro', label: 'Glass Pro', icon: <Layers size={20} strokeWidth={1.5} /> },
+          { id: 'freelance-pro', label: 'Freelance', icon: <User size={20} strokeWidth={1.5} /> },
+        ]
+      },
+      {
+        name: t("category_realestate") || 'Immobilier',
+        icon: <Building size={16} className="text-orange-400" />,
+        layouts: [
+          { id: 'immo-simple', label: 'Simple', icon: <Home size={20} strokeWidth={1.5} /> },
+          { id: 'immo-modern', label: 'Modern', icon: <Building size={20} strokeWidth={1.5} /> },
+          { id: 'immo-grid', label: 'Grid', icon: <LayoutGrid size={20} strokeWidth={1.5} /> }
+        ]
+      },
+      {
+        name: t("category_events") || 'Agendas',
+        icon: <Calendar size={16} className="text-emerald-400" />,
+        layouts: [
+          { id: 'agenda-jour', label: 'Journée', icon: <Calendar size={20} strokeWidth={1.5} /> },
+          { id: 'agenda-semaine', label: 'Semaine', icon: <Calendar size={20} strokeWidth={1.5} /> },
+        ]
+      }
+    ];
+
+    return (
+      <div className="space-y-4 w-full">
+        <div className="flex overflow-x-auto gap-1.5 p-1.5 bg-[#111] border border-white/5 rounded-2xl [&::-webkit-scrollbar]:hidden w-full ring-1 ring-white/10">
+          {categories.map((category) => {
+            const isActive = activeCategoryTab === category.name || (activeCategoryTab === 'Cartes & Profils' && category.name === 'Métiers Pro Max' && !categories.some(c=>c.name===activeCategoryTab));
+            return (
+              <button
+                key={category.name}
+                onClick={() => setActiveCategoryTab(category.name)}
+                className={`flex-1 min-w-fit flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl transition-all whitespace-nowrap ${isActive ? 'bg-white/10 text-white shadow-lg border border-white/5' : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.02]'}`}
+              >
+                <div className={`transition-colors ${isActive ? 'text-white' : 'text-zinc-500 group-hover:text-zinc-300'}`}>
+                  {category.icon}
+                </div>
+                <span className="text-[11px] font-bold uppercase tracking-wider">{category.name}</span>
+              </button>
+            );
+          })}
+        </div>
+        <div className="pt-2">
+          {categories.filter(c => c.name === activeCategoryTab || (activeCategoryTab === 'Cartes & Profils' && c.name === 'Métiers Pro Max')).map((category) => (
+            <div key={category.name} className="grid grid-cols-3 lg:grid-cols-4 gap-2 animate-in fade-in slide-in-from-bottom-2 duration-300">
+              {category.layouts.map((layoutObj) => {
+                const isActive = formData.layout === layoutObj.id;
+                return (
+                  <motion.button
+                    key={layoutObj.id}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => setFormData(prev => ({ ...prev, layout: layoutObj.id }))}
+                    className={`relative flex flex-col items-center justify-center p-3 rounded-xl border transition-all overflow-hidden group ${isActive ? 'bg-white/10 border-white shadow-md' : 'bg-white/[0.02] border-white/5 hover:bg-white/[0.05] hover:border-white/20'}`}
+                  >
+                    {isActive && (
+                      <div className="absolute top-1.5 right-1.5">
+                        <CheckCircle2 size={12} className="text-white drop-shadow-md" />
+                      </div>
+                    )}
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center mb-2 transition-colors ${isActive ? 'bg-white text-black shadow-md' : 'bg-black/30 text-zinc-400 group-hover:text-white group-hover:bg-white/10 border border-white/5'}`}>
+                      <div className="scale-75">{layoutObj.icon}</div>
+                    </div>
+                    <span className={`text-[9px] font-bold uppercase tracking-wider text-center ${isActive ? 'text-white' : 'text-zinc-500 group-hover:text-zinc-300'}`}>
+                      {layoutObj.label}
+                    </span>
+                  </motion.button>
+                );
+              })}
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  const SectionDesign = () => (
+    <div className="space-y-6">
+      <h2 className="text-[11px] font-bold uppercase tracking-widest text-zinc-500 flex items-center gap-2">
+        <Palette size={14} /> Design & Layout
+      </h2>
+      <LayoutSelector />
+      
+      <div className="pt-6 border-t border-white/5 space-y-4">
+        <h3 className="text-xs font-semibold text-zinc-400">{t("theme_color") || "Couleur du thème"}</h3>
+        <div className="flex flex-wrap gap-3">
+          {THEMES.slice(0, 8).map(theme => (
+            <button 
+              key={theme.id}
+              onClick={() => setFormData(prev => ({ ...prev, theme }))}
+              className={`w-10 h-10 rounded-full transition-all flex items-center justify-center shadow-lg ${formData.theme.id === theme.id ? 'ring-2 ring-white ring-offset-2 ring-offset-black scale-110' : 'opacity-70 hover:opacity-100 hover:scale-110'}`}
+              style={{ background: theme.bg }}
+            >
+              {formData.theme.id === theme.id && <CheckCircle2 size={16} className="text-white drop-shadow-md" />}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="pt-6 border-t border-white/5 space-y-4">
+        <h3 className="text-xs font-semibold text-zinc-400">{t("mode") || "Mode d'affichage"}</h3>
+        <div className="flex gap-2 p-1 bg-black/40 rounded-xl border border-white/10">
+          {['dark', 'light'].map((mode) => (
+            <button
+              key={mode}
+              onClick={() => setFormData(prev => ({ ...prev, mode }))}
+              className={`flex-1 py-3 text-xs font-bold rounded-lg transition-all ${formData.mode === mode ? 'bg-white text-black shadow-lg' : 'text-zinc-500 hover:text-white'}`}
+            >
+              {mode === 'dark' ? 'Nuit (Sombre)' : 'Jour (Clair)'}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+
+  const SectionProfile = () => (
+    <div className="space-y-6">
+      <h2 className="text-[11px] font-bold uppercase tracking-widest text-zinc-500 flex items-center gap-2">
+        <User size={14} /> Profil & Contact
+      </h2>
+      
+      <div className="p-4 bg-white/[0.03] border border-white/10 rounded-2xl">
+        <label className="block text-[11px] font-bold text-blue-400 mb-2 tracking-wider uppercase">
+          Lien personnalisé
+        </label>
+        <div className="relative">
+          <LinkIcon size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
+          <input 
+            type="text" 
+            name="username" 
+            value={formData.username} 
+            onChange={handleChange} 
+            className="w-full bg-black/60 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-sm text-white focus:outline-none focus:border-blue-500/50 focus:bg-white/[0.05] transition-all" 
+            placeholder="votre-identifiant" 
+          />
+        </div>
+      </div>
+      
+      <div>
+        <label className="block text-[11px] font-medium text-zinc-400 mb-1.5 mx-1">{t('full_name') || "Nom complet"}</label>
+        <input type="text" name="name" value={formData.name} onChange={handleChange} className="w-full bg-white/[0.03] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-white/30 transition-all" />
+      </div>
+
+      <div className="grid grid-cols-2 gap-4 pb-2">
+        <div className="space-y-2">
+          <label className="block text-[11px] font-medium text-zinc-400 mx-1">Photo Profil / Logo</label>
+          <div className="relative w-full aspect-square max-w-[140px] rounded-2xl bg-white/[0.02] border border-white/10 p-2 flex flex-col items-center justify-center group/avatar transition-all duration-300 hover:border-white/20 overflow-hidden">
+            {formData.avatarUrl ? (
+              <div className="relative w-full h-full">
+                <img src={formData.avatarUrl} className="w-full h-full object-cover rounded-xl" alt="Avatar" />
+                <button 
+                  type="button"
+                  onClick={() => setFormData(prev => ({ ...prev, avatarUrl: "" }))}
+                  className="absolute top-1.5 right-1.5 p-1.5 bg-black/60 hover:bg-red-500/80 text-white rounded-lg transition-colors z-20 backdrop-blur-md"
+                >
+                  <Trash2 size={12} />
+                </button>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center gap-1.5 text-zinc-500 text-center p-3 h-full">
+                <UploadCloud size={24} className="text-zinc-400" />
+                <span className="text-[10px]">Importer</span>
+              </div>
+            )}
+            <label className="absolute inset-0 bg-black/60 opacity-0 group-hover/avatar:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1 cursor-pointer z-10">
+              <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e, 'avatarUrl')} className="absolute inset-0 opacity-0 cursor-pointer" />
+              <UploadCloud size={20} className="text-white" />
+              <span className="text-[10px] text-white font-medium">Modifier</span>
+            </label>
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <label className="block text-[11px] font-medium text-zinc-400 mx-1">Couverture</label>
+          <div className="relative w-full aspect-square max-w-[140px] rounded-2xl bg-white/[0.02] border border-white/10 p-2 flex flex-col items-center justify-center group/cover transition-all duration-300 hover:border-white/20 overflow-hidden">
+            {formData.coverUrl ? (
+              <div className="relative w-full h-full">
+                <img src={formData.coverUrl} className="w-full h-full object-cover rounded-xl" alt="Cover" />
+                <button 
+                  type="button"
+                  onClick={() => setFormData(prev => ({ ...prev, coverUrl: "" }))}
+                  className="absolute top-1.5 right-1.5 p-1.5 bg-black/60 hover:bg-red-500/80 text-white rounded-lg transition-colors z-20 backdrop-blur-md"
+                >
+                  <Trash2 size={12} />
+                </button>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center gap-1.5 text-zinc-500 text-center p-3 h-full">
+                <UploadCloud size={24} className="text-zinc-400" />
+                <span className="text-[10px]">Importer</span>
+              </div>
+            )}
+            <label className="absolute inset-0 bg-black/60 opacity-0 group-hover/cover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1 cursor-pointer z-10">
+              <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e, 'coverUrl')} className="absolute inset-0 opacity-0 cursor-pointer" />
+              <UploadCloud size={20} className="text-white" />
+              <span className="text-[10px] text-white font-medium">Modifier</span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="block text-[11px] font-medium text-zinc-400 mb-1.5 mx-1">{t('role') || "Poste / Titre"}</label>
+          <input type="text" name="role" value={formData.role} onChange={handleChange} className="w-full bg-white/[0.03] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-white/30 transition-all" />
+        </div>
+        <div>
+          <label className="block text-[11px] font-medium text-zinc-400 mb-1.5 mx-1">{t('company') || "Entreprise"}</label>
+          <input type="text" name="company" value={formData.company} onChange={handleChange} className="w-full bg-white/[0.03] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-white/30 transition-all" />
+        </div>
+      </div>
+
+      <div>
+        <label className="block text-[11px] font-medium text-zinc-400 mb-1.5 mx-1">{t('bio') || "Biographie"}</label>
+        <textarea name="bio" value={formData.bio} onChange={handleChange} rows={3} className="w-full bg-white/[0.03] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-white/30 transition-all resize-none" />
+      </div>
+
+      {/* Spécifique Freelance (Skills) */}
+      {(formData.layout === 'pro-freelance-dark' || formData.layout === 'freelance-pro') && (
+        <div className="pt-4">
+          <label className="block text-[11px] font-medium text-zinc-400 mb-1.5 mx-1">Compétences (séparées par une virgule)</label>
+          <input 
+            type="text" 
+            value={formData.skills.join(', ')} 
+            onChange={(e) => setFormData(prev => ({ ...prev, skills: e.target.value.split(',').map(s=>s.trim()) }))}
+            className="w-full bg-white/[0.03] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-white/30 transition-all" 
+            placeholder="Ex: Branding, UI/UX, Illustration"
+          />
+        </div>
+      )}
+
+      {/* Spécifique Coach (Quote) */}
+      {formData.layout === 'pro-coach-warm' && (
+        <div className="pt-4">
+          <label className="block text-[11px] font-medium text-zinc-400 mb-1.5 mx-1">Citation / Mantra</label>
+          <textarea 
+            name="quote" 
+            value={formData.quote} 
+            onChange={handleChange} 
+            rows={2} 
+            className="w-full bg-white/[0.03] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-white/30 transition-all resize-none" 
+            placeholder="Ex: Développez votre potentiel..."
+          />
+        </div>
+      )}
+
+      <div className="grid grid-cols-2 gap-4 pt-4 border-t border-white/10">
+        <div>
+          <label className="block text-[11px] font-medium text-zinc-400 mb-1.5 ml-1">Email</label>
+          <input type="email" name="email" value={formData.email} onChange={handleChange} className="w-full bg-white/[0.03] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-white/30 transition-all" />
+        </div>
+        <div>
+          <label className="block text-[11px] font-medium text-zinc-400 mb-1.5 ml-1">Téléphone</label>
+          <input type="tel" name="phone" value={formData.phone} onChange={handleChange} className="w-full bg-white/[0.03] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-white/30 transition-all" />
+        </div>
+      </div>
+      
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="block text-[11px] font-medium text-zinc-400 mb-1.5 ml-1">Site Web</label>
+          <input type="url" name="website" value={formData.website} onChange={handleChange} className="w-full bg-white/[0.03] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-white/30 transition-all" />
+        </div>
+        <div>
+          <label className="block text-[11px] font-medium text-zinc-400 mb-1.5 ml-1">Adresse</label>
+          <input type="text" name="location" value={formData.location} onChange={handleChange} className="w-full bg-white/[0.03] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-white/30 transition-all" />
+        </div>
+      </div>
+    </div>
+  );
+
+  const SectionLinks = () => (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h2 className="text-[11px] font-bold uppercase tracking-widest text-zinc-500 flex items-center gap-2">
+          <LinkIcon size={14} /> Réseaux Sociaux
+        </h2>
+        <button onClick={addSocialLink} className="flex items-center gap-1 text-[10px] font-bold bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg transition-colors">
+          <Plus size={12} /> {t("add") || "Ajouter"}
+        </button>
+      </div>
+      <div className="space-y-3">
+        {formData.socialLinks.map((link) => (
+          <div key={link.id} className="flex gap-2 items-center bg-white/[0.02] border border-white/5 p-2 rounded-xl">
+            <input type="text" placeholder="Nom" value={link.platform} onChange={(e) => updateSocialLink(link.id, "platform", e.target.value)} className="w-1/3 bg-transparent px-2 py-2 text-sm text-white focus:outline-none" />
+            <div className="w-[1px] h-6 bg-white/10 mx-1" />
+            <input type="text" placeholder="URL" value={link.url} onChange={(e) => updateSocialLink(link.id, "url", e.target.value)} className="flex-1 bg-transparent px-2 py-2 text-sm text-white focus:outline-none" />
+            <button onClick={() => removeSocialLink(link.id)} className="p-2 text-zinc-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors">
+              <Trash2 size={14} />
+            </button>
+          </div>
+        ))}
+      </div>
+
+      {/* Spécifique Créateur (Stats) */}
+      {formData.layout === 'pro-creator' && (
+        <div className="pt-8 border-t border-white/10 space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-[11px] font-bold uppercase tracking-widest text-zinc-500 flex items-center gap-2">
+              <Hash size={14} /> Statistiques
+            </h2>
+            <button onClick={addStat} className="flex items-center gap-1 text-[10px] font-bold bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg transition-colors">
+              <Plus size={12} /> {t("add") || "Ajouter"}
+            </button>
+          </div>
+          <div className="space-y-3">
+            {formData.stats.map((stat) => (
+              <div key={stat.id} className="flex gap-2 items-center bg-white/[0.02] border border-white/5 p-2 rounded-xl">
+                <input type="text" placeholder="Plateforme" value={stat.platform} onChange={(e) => updateStat(stat.id, "platform", e.target.value)} className="w-1/3 bg-transparent px-2 py-2 text-sm text-white focus:outline-none" />
+                <div className="w-[1px] h-6 bg-white/10 mx-1" />
+                <input type="text" placeholder="Compte (125K)" value={stat.count} onChange={(e) => updateStat(stat.id, "count", e.target.value)} className="w-1/4 bg-transparent px-2 py-2 text-sm text-white focus:outline-none" />
+                <div className="w-[1px] h-6 bg-white/10 mx-1" />
+                <input type="text" placeholder="Label" value={stat.label} onChange={(e) => updateStat(stat.id, "label", e.target.value)} className="flex-1 bg-transparent px-2 py-2 text-sm text-white focus:outline-none" />
+                <button onClick={() => removeStat(stat.id)} className="p-2 text-zinc-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors">
+                  <Trash2 size={14} />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Spécifique Restaurant (Menu) */}
+      {formData.layout === 'pro-restaurant-adv' && (
+        <div className="pt-8 border-t border-white/10 space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-[11px] font-bold uppercase tracking-widest text-zinc-500 flex items-center gap-2">
+              <Utensils size={14} /> Menu du Restaurant
+            </h2>
+            <button onClick={addMenuItem} className="flex items-center gap-1 text-[10px] font-bold bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg transition-colors">
+              <Plus size={12} /> {t("add") || "Ajouter"}
+            </button>
+          </div>
+          <div className="space-y-4">
+            {formData.menu.map((item) => (
+              <div key={item.id} className="space-y-2 bg-white/[0.02] p-4 rounded-xl border border-white/10">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-xs font-semibold text-zinc-400">Plat</span>
+                  <button onClick={() => removeMenuItem(item.id)} className="p-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-lg transition-colors">
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <input type="text" placeholder="Catégorie (Entrées, Plats)" value={item.category} onChange={(e) => updateMenuItem(item.id, "category", e.target.value)} className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none" />
+                  <input type="text" placeholder="Prix (ex: €14.90)" value={item.price} onChange={(e) => updateMenuItem(item.id, "price", e.target.value)} className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none" />
+                </div>
+                <input type="text" placeholder="Nom du plat" value={item.name} onChange={(e) => updateMenuItem(item.id, "name", e.target.value)} className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none" />
+                <textarea placeholder="Description" value={item.desc} onChange={(e) => updateMenuItem(item.id, "desc", e.target.value)} rows={2} className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none resize-none" />
+                <input type="text" placeholder="URL Image" value={item.img} onChange={(e) => updateMenuItem(item.id, "img", e.target.value)} className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none" />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Spécifique Agenda Jour */}
+      {formData.layout === 'agenda-jour' && (
+        <div className="pt-8 border-t border-white/10 space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-[11px] font-bold uppercase tracking-widest text-zinc-500 flex items-center gap-2">
+              <Calendar size={14} /> Programme Journée
+            </h2>
+            <button onClick={addScheduleItem} className="flex items-center gap-1 text-[10px] font-bold bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg transition-colors">
+              <Plus size={12} /> {t("add") || "Ajouter"}
+            </button>
+          </div>
+          <div className="space-y-3">
+            {formData.scheduleData.map((item) => (
+              <div key={item.id} className="flex gap-2 items-center bg-white/[0.02] border border-white/5 p-2 rounded-xl">
+                <input type="text" placeholder="Heure" value={item.time} onChange={(e) => updateScheduleItem(item.id, "time", e.target.value)} className="w-1/4 bg-transparent px-2 py-2 text-sm text-white focus:outline-none" />
+                <div className="w-[1px] h-6 bg-white/10 mx-1" />
+                <input type="text" placeholder="Tâche" value={item.task} onChange={(e) => updateScheduleItem(item.id, "task", e.target.value)} className="flex-1 bg-transparent px-2 py-2 text-sm text-white focus:outline-none" />
+                <button onClick={() => removeScheduleItem(item.id)} className="p-2 text-zinc-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors">
+                  <Trash2 size={14} />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Spécifique Agenda Semaine */}
+      {formData.layout === 'agenda-semaine' && (
+        <div className="pt-8 border-t border-white/10 space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-[11px] font-bold uppercase tracking-widest text-zinc-500 flex items-center gap-2">
+              <Calendar size={14} /> Événements
+            </h2>
+            <button onClick={addEventItem} className="flex items-center gap-1 text-[10px] font-bold bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg transition-colors">
+              <Plus size={12} /> {t("add") || "Ajouter"}
+            </button>
+          </div>
+          <div className="space-y-4">
+            {formData.eventData.map((item) => (
+              <div key={item.id} className="space-y-2 bg-white/[0.02] p-4 rounded-xl border border-white/10">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-xs font-semibold text-zinc-400">Événement</span>
+                  <button onClick={() => removeEventItem(item.id)} className="p-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-lg transition-colors">
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <input type="text" placeholder="Jour (ex: JEU.)" value={item.day} onChange={(e) => updateEventItem(item.id, "day", e.target.value)} className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none" />
+                  <input type="text" placeholder="Date (ex: 05)" value={item.date} onChange={(e) => updateEventItem(item.id, "date", e.target.value)} className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none" />
+                </div>
+                <input type="text" placeholder="Titre" value={item.title} onChange={(e) => updateEventItem(item.id, "title", e.target.value)} className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none" />
+                <div className="grid grid-cols-2 gap-2">
+                  <input type="text" placeholder="Lieu" value={item.location} onChange={(e) => updateEventItem(item.id, "location", e.target.value)} className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none" />
+                  <input type="text" placeholder="Heure" value={item.time} onChange={(e) => updateEventItem(item.id, "time", e.target.value)} className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none" />
+                </div>
+                <textarea placeholder="Description" value={item.desc} onChange={(e) => updateEventItem(item.id, "desc", e.target.value)} rows={2} className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none resize-none" />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
   return (
     <div className="flex h-[100dvh] w-full bg-[#050505] text-white overflow-hidden font-sans" dir={isRTL ? "rtl" : "ltr"}>
       
-      {/* SUCCESS MODAL - PRO MAX */}
+      {/* SUCCESS MODAL */}
       <AnimatePresence>
         {publishedSlug && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-xl p-4">
@@ -512,31 +928,65 @@ export default function DemoBuilder() {
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-[#111] border border-white/10 p-8 rounded-3xl max-w-sm w-full text-center shadow-2xl flex flex-col items-center"
+              className="bg-[#111] border border-white/10 p-8 rounded-3xl max-w-md w-full text-center shadow-2xl flex flex-col items-center relative overflow-hidden"
             >
+              <button onClick={() => setPublishedSlug(null)} className="absolute top-6 right-6 text-zinc-500 hover:text-white transition-colors">
+                <X size={20} />
+              </button>
               <div className="w-20 h-20 rounded-full bg-emerald-500/20 flex items-center justify-center mb-6 border border-emerald-500/30">
                 <CheckCircle2 size={40} className="text-emerald-400" />
               </div>
               <h2 className="text-2xl font-bold mb-2">{t("publish_success") || "Félicitations !"}</h2>
-              <p className="text-zinc-400 text-sm mb-8">
-                {t("vcard_is_live") || "Votre vCard est désormais en ligne et prête à être partagée."}
+              <p className="text-zinc-400 text-sm mb-6">
+                {t("vcard_is_live") || "Votre vCard est désormais en ligne avec votre sous-domaine."}
               </p>
               
+              <div className="w-full flex flex-col items-center gap-4 bg-white/[0.02] border border-white/10 rounded-2xl p-6 mb-8">
+                <div className="p-3 bg-white rounded-xl shadow-xl">
+                  <QRCodeSVG 
+                    value={`${process.env.NODE_ENV === 'production' ? 'https://' : 'http://'}${publishedSlug}.${process.env.NODE_ENV === 'production' ? 'hosyardigital.com' : 'localhost:3000'}`} 
+                    size={120} 
+                    fgColor="#000" 
+                    bgColor="#fff" 
+                    level="Q" 
+                  />
+                </div>
+                <div className="w-full">
+                  <p className="text-[11px] font-bold text-zinc-500 uppercase tracking-widest mb-1">Votre Sous-domaine</p>
+                  <p className="text-sm font-mono text-emerald-400 bg-emerald-400/10 py-2 px-3 rounded-lg border border-emerald-400/20 truncate">
+                    {process.env.NODE_ENV === 'production' ? 'https://' : 'http://'}{publishedSlug}.{process.env.NODE_ENV === 'production' ? 'hosyardigital.com' : 'localhost:3000'}
+                  </p>
+                </div>
+              </div>
+              
               <div className="flex flex-col w-full gap-3">
-                <Link
-                  href={publishedUsername ? `/u/${publishedUsername}` : `/v/${publishedSlug}`}
+                <button
+                  onClick={() => {
+                    const url = `${process.env.NODE_ENV === 'production' ? 'https://' : 'http://'}${publishedSlug}.${process.env.NODE_ENV === 'production' ? 'hosyardigital.com' : 'localhost:3000'}`;
+                    navigator.clipboard.writeText(url);
+                    alert(t("copied") || "Copié !");
+                  }}
                   className="w-full flex items-center justify-center gap-2 py-4 bg-white text-black rounded-2xl font-bold text-sm hover:scale-105 active:scale-95 transition-transform"
                 >
-                  <Eye size={18} />
-                  {t("view_my_vcard") || "Voir ma vCard"}
-                </Link>
-                <Link
-                  href="/dashboard"
-                  className="w-full flex items-center justify-center gap-2 py-4 bg-white/5 border border-white/10 rounded-2xl text-white font-bold text-sm hover:bg-white/10 transition-colors"
-                >
-                  <LayoutDashboard size={18} />
-                  {t("go_to_dashboard") || "Aller au Dashboard"}
-                </Link>
+                  <Share2 size={18} />
+                  {t("copy_link") || "Copier le lien"}
+                </button>
+                <div className="flex gap-3">
+                  <Link
+                    href={`/v/${publishedSlug}`}
+                    className="flex-1 flex items-center justify-center gap-2 py-3 bg-white/10 hover:bg-white/20 rounded-2xl text-white font-bold text-sm transition-colors"
+                  >
+                    <Eye size={16} />
+                    {t("view") || "Voir"}
+                  </Link>
+                  <Link
+                    href="/dashboard"
+                    className="flex-1 flex items-center justify-center gap-2 py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl text-white font-bold text-sm transition-colors"
+                  >
+                    <LayoutDashboard size={16} />
+                    {t("dashboard") || "Dashboard"}
+                  </Link>
+                </div>
               </div>
             </motion.div>
           </div>
@@ -567,28 +1017,98 @@ export default function DemoBuilder() {
         )}
       </AnimatePresence>
 
-      {/* MOBILE TABS (Hidden on md+) */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 h-20 bg-black/80 backdrop-blur-xl border-t border-white/10 z-50 flex items-center justify-center gap-2 px-6">
-        <button
-          onClick={() => setActiveTab("edit")}
-          className={`flex-1 py-3 rounded-xl flex items-center justify-center gap-2 text-xs font-bold transition-all ${activeTab === "edit" ? "bg-white text-black" : "bg-white/5 text-zinc-400"}`}
+      {/* BACKGROUND LIVE PREVIEW (Hero on Mobile, Right Panel on Desktop) */}
+      <div className={`absolute inset-0 z-0 flex flex-col items-center justify-center overflow-hidden transition-all duration-500 md:relative md:flex-1 md:h-full md:bg-[#0a0a0a] ${activePanel !== 'none' ? 'scale-95 opacity-80 md:scale-100 md:opacity-100' : 'scale-100 opacity-100'}`}>
+        
+        {/* Background ambient lighting */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] md:w-[800px] md:h-[800px] opacity-30 blur-[100px] rounded-full transition-all duration-700" style={{ background: formData.theme.bg }} />
+        </div>
+
+        {/* Mobile Top Header (Glass) - Hidden on desktop */}
+        <div className="absolute top-0 left-0 right-0 p-4 pt-safe flex justify-between items-center z-10 md:hidden bg-gradient-to-b from-black/60 to-transparent pointer-events-none">
+          <Link href="/dashboard" className="pointer-events-auto w-10 h-10 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center text-white border border-white/10 shadow-lg">
+            <Home size={18} />
+          </Link>
+          <div className="px-4 py-2 bg-black/40 backdrop-blur-md rounded-full border border-white/10 flex items-center gap-2 text-xs font-bold shadow-xl">
+            <Smartphone size={14} className="text-zinc-400" /> Live Preview
+          </div>
+          <button onClick={handlePublish} disabled={isPublishing} className="pointer-events-auto w-10 h-10 bg-white text-black rounded-full flex items-center justify-center font-bold shadow-xl active:scale-95 transition-transform">
+            {isPublishing ? <div className="w-4 h-4 border-2 border-black/20 border-t-black rounded-full animate-spin" /> : <UploadCloud size={18} />}
+          </button>
+        </div>
+
+        {/* Desktop Device Frame */}
+        <div className="relative w-full h-full md:h-[85vh] md:w-[390px] md:rounded-[45px] md:border-[8px] border-[#222] bg-[#050505] shadow-2xl overflow-hidden shadow-black/50 md:ring-1 ring-white/5 flex flex-col">
+          {/* iOS Notch Mockup Desktop */}
+          <div className="hidden md:block absolute top-0 inset-x-0 h-6 z-50 pointer-events-none">
+            <div className="w-[120px] h-6 bg-[#222] mx-auto rounded-b-2xl relative">
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-4 bg-black rounded-full" />
+            </div>
+          </div>
+          <div className="flex-1 overflow-y-auto w-full h-full [&::-webkit-scrollbar]:hidden relative bg-[#050505]">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={formData.layout + formData.mode + formData.theme.id}
+                initial={{ opacity: 0, scale: 0.98 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.98 }}
+                transition={{ duration: 0.3 }}
+                className={`w-full min-h-full ${formData.mode === 'light' ? 'bg-white text-black' : ''}`}
+              >
+                {renderTemplatePreview()}
+              </motion.div>
+            </AnimatePresence>
+          </div>
+        </div>
+      </div>
+
+      {/* MOBILE BOTTOM DOCK (Pro Max UI) */}
+      <div className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] flex items-center gap-2 p-2 bg-black/60 backdrop-blur-2xl border border-white/10 rounded-full shadow-[0_20px_40px_rgba(0,0,0,0.4)]">
+        <button 
+          onClick={() => setActivePanel(activePanel === 'design' ? 'none' : 'design')}
+          className={`flex items-center gap-2 px-4 py-3 rounded-full text-xs font-bold transition-all ${activePanel === 'design' ? 'bg-white text-black scale-105' : 'text-zinc-400 hover:text-white hover:bg-white/5'}`}
         >
-          <Edit3 size={16} /> Éditer
+          <Palette size={18} /> {activePanel === 'design' && <span>Design</span>}
         </button>
-        <button
-          onClick={() => setActiveTab("preview")}
-          className={`flex-1 py-3 rounded-xl flex items-center justify-center gap-2 text-xs font-bold transition-all ${activeTab === "preview" ? "bg-white text-black" : "bg-white/5 text-zinc-400"}`}
+        <button 
+          onClick={() => setActivePanel(activePanel === 'profile' ? 'none' : 'profile')}
+          className={`flex items-center gap-2 px-4 py-3 rounded-full text-xs font-bold transition-all ${activePanel === 'profile' ? 'bg-white text-black scale-105' : 'text-zinc-400 hover:text-white hover:bg-white/5'}`}
         >
-          <Eye size={16} /> Aperçu
+          <User size={18} /> {activePanel === 'profile' && <span>Profil</span>}
+        </button>
+        <button 
+          onClick={() => setActivePanel(activePanel === 'links' ? 'none' : 'links')}
+          className={`flex items-center gap-2 px-4 py-3 rounded-full text-xs font-bold transition-all ${activePanel === 'links' ? 'bg-white text-black scale-105' : 'text-zinc-400 hover:text-white hover:bg-white/5'}`}
+        >
+          <LinkIcon size={18} /> {activePanel === 'links' && <span>Liens</span>}
         </button>
       </div>
 
-      {/* LEFT PANEL - Editor (Pro Max UI) */}
-      <motion.div 
-        initial={{ opacity: 0, x: -20 }}
-        animate={{ opacity: 1, x: 0 }}
-        className={`w-full md:w-1/2 lg:w-[45%] h-full flex flex-col bg-[#050505] border-r border-white/10 z-10 ${activeTab === "edit" ? "flex" : "hidden md:flex"}`}
-      >
+      {/* MOBILE BOTTOM SHEET OVERLAY */}
+      <AnimatePresence>
+        {activePanel !== 'none' && (
+          <motion.div
+            initial={{ opacity: 0, y: '100%' }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: '100%' }}
+            transition={{ type: "spring", damping: 25, stiffness: 200 }}
+            className="md:hidden fixed inset-x-0 bottom-0 h-[75vh] z-50 bg-[#0a0a0a]/90 backdrop-blur-3xl border-t border-white/10 rounded-t-[40px] shadow-[0_-20px_50px_rgba(0,0,0,0.5)] flex flex-col overflow-hidden"
+          >
+            <div className="w-full flex justify-center py-4 cursor-pointer" onClick={() => setActivePanel('none')}>
+              <div className="w-12 h-1.5 bg-white/20 rounded-full" />
+            </div>
+            <div className="flex-1 overflow-y-auto px-6 pb-32 [&::-webkit-scrollbar]:hidden">
+              {activePanel === 'design' && <SectionDesign />}
+              {activePanel === 'profile' && <SectionProfile />}
+              {activePanel === 'links' && <SectionLinks />}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* DESKTOP LEFT PANEL (Editor) */}
+      <div className="hidden md:flex flex-col w-[45%] h-full bg-[#050505] border-r border-white/10 z-10 order-first">
         <div className="p-5 border-b border-white/10 flex items-center justify-between bg-black/40 backdrop-blur-md sticky top-0 z-20">
           <div className="flex items-center gap-3">
             <Link href="/" className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-xs shadow-lg">
@@ -615,329 +1135,12 @@ export default function DemoBuilder() {
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-5 md:p-8 space-y-10 [&::-webkit-scrollbar]:hidden pb-32 md:pb-8">
-          
-          <section className="space-y-6">
-            <h2 className="text-[11px] font-bold uppercase tracking-widest text-zinc-500 flex items-center gap-2">
-              <Palette size={14} /> Design & Layout
-            </h2>
-            <LayoutSelector />
-            
-            <div className="pt-6 border-t border-white/5 space-y-4">
-              <h3 className="text-xs font-semibold text-zinc-400">{t("theme_color") || "Couleur du thème"}</h3>
-              <div className="flex flex-wrap gap-3">
-                {THEMES.slice(0, 8).map(theme => (
-                  <button 
-                    key={theme.id}
-                    onClick={() => setFormData(prev => ({ ...prev, theme }))}
-                    className={`w-10 h-10 rounded-full transition-all flex items-center justify-center ${formData.theme.id === theme.id ? 'ring-2 ring-white ring-offset-2 ring-offset-black' : 'opacity-70 hover:opacity-100 hover:scale-110'}`}
-                    style={{ background: theme.bg }}
-                  >
-                    {formData.theme.id === theme.id && <CheckCircle2 size={16} className="text-white drop-shadow-md" />}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="pt-6 border-t border-white/5 space-y-4">
-              <h3 className="text-xs font-semibold text-zinc-400">{t("mode") || "Mode d'affichage"}</h3>
-              <div className="flex gap-2 p-1 bg-white/5 rounded-xl border border-white/10">
-                {['dark', 'light'].map((mode) => (
-                  <button
-                    key={mode}
-                    onClick={() => setFormData(prev => ({ ...prev, mode }))}
-                    className={`flex-1 py-2.5 text-xs font-bold rounded-lg transition-all ${formData.mode === mode ? 'bg-white text-black shadow-md' : 'text-zinc-500 hover:text-white'}`}
-                  >
-                    {mode === 'dark' ? 'Nuit (Sombre)' : 'Jour (Clair)'}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </section>
-
-          <section className="space-y-6 pt-8 border-t border-white/10">
-            <h2 className="text-[11px] font-bold uppercase tracking-widest text-zinc-500 flex items-center gap-2">
-              <User size={14} /> Profil & Contact
-            </h2>
-            
-            {/* PUBLIC URL / USERNAME INTEGRATION */}
-            <div className="p-4 bg-white/[0.02] border border-white/10 rounded-2xl mb-4">
-              <label className="block text-[11px] font-bold text-blue-400 mb-2 tracking-wider uppercase">
-                Identifiant (Lien de sous-domaine)
-              </label>
-              <div className="relative">
-                <LinkIcon size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
-                <input 
-                  type="text" 
-                  name="username" 
-                  value={formData.username} 
-                  onChange={handleChange} 
-                  className="w-full bg-black/50 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-sm text-white focus:outline-none focus:border-blue-500/50 focus:bg-white/[0.05] transition-all" 
-                  placeholder="votre-identifiant (ex: digitale4747)" 
-                />
-              </div>
-              <p className="text-[10px] text-zinc-500 mt-2">Ce lien sera utilisé pour votre profil public (ex: hosyardigital.com/u/votre-identifiant)</p>
-            </div>
-            
-            <div className="flex gap-4">
-              <div className="flex-1">
-                <label className="block text-[11px] font-medium text-zinc-400 mb-1.5 mx-1">{t('full_name') || "Nom complet"}</label>
-                <input type="text" name="name" value={formData.name} onChange={handleChange} className="w-full bg-white/[0.03] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-white/30 focus:bg-white/[0.06] transition-all" />
-              </div>
-            </div>
-
-            {/* AVATAR & COVER - STYLE PRO MAX */}
-            <div className="grid grid-cols-2 gap-4 pb-2">
-              {/* Photo Profil */}
-              <div className="space-y-2">
-                <label className="block text-[11px] font-medium text-zinc-400 mx-1">Photo Profil</label>
-                <div className="relative w-full aspect-square max-w-[140px] rounded-2xl bg-white/[0.02] border border-white/10 p-2 flex flex-col items-center justify-center group/avatar transition-all duration-300 hover:border-white/20 overflow-hidden">
-                  {formData.avatarUrl ? (
-                    <div className="relative w-full h-full">
-                      <img src={formData.avatarUrl} className="w-full h-full object-cover rounded-xl" alt="Avatar" />
-                      {/* Delete button */}
-                      <button 
-                        type="button"
-                        onClick={() => setFormData(prev => ({ ...prev, avatarUrl: "" }))}
-                        className="absolute top-1.5 right-1.5 p-1.5 bg-black/60 hover:bg-red-500/80 text-white rounded-lg transition-colors z-20 backdrop-blur-md"
-                        title="Supprimer la photo"
-                      >
-                        <Trash2 size={12} />
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center justify-center gap-1.5 text-zinc-500 text-center p-3 h-full">
-                      <UploadCloud size={24} className="text-zinc-400" />
-                      <span className="text-[10px]">Importer</span>
-                    </div>
-                  )}
-
-                  {/* Upload overlay */}
-                  <label className="absolute inset-0 bg-black/60 opacity-0 group-hover/avatar:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1 cursor-pointer z-10">
-                    <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e, 'avatarUrl')} className="absolute inset-0 opacity-0 cursor-pointer" />
-                    <UploadCloud size={20} className="text-white" />
-                    <span className="text-[10px] text-white font-medium">Modifier</span>
-                  </label>
-                </div>
-                
-                {/* Fallback URL input (compact) */}
-                <input 
-                  type="text" 
-                  name="avatarUrl" 
-                  value={formData.avatarUrl} 
-                  onChange={handleChange} 
-                  placeholder="Lien photo" 
-                  className="w-full bg-white/[0.02] border border-white/10 hover:border-white/20 rounded-xl px-3 py-1.5 text-[10px] text-zinc-300 focus:outline-none focus:border-white/30 transition-all" 
-                />
-              </div>
-
-              {/* Image Couverture */}
-              <div className="space-y-2">
-                <label className="block text-[11px] font-medium text-zinc-400 mx-1">Image Couverture</label>
-                <div className="relative w-full aspect-square max-w-[140px] rounded-2xl bg-white/[0.02] border border-white/10 p-2 flex flex-col items-center justify-center group/cover transition-all duration-300 hover:border-white/20 overflow-hidden">
-                  {formData.coverUrl ? (
-                    <div className="relative w-full h-full">
-                      <img src={formData.coverUrl} className="w-full h-full object-cover rounded-xl" alt="Cover" />
-                      {/* Delete button */}
-                      <button 
-                        type="button"
-                        onClick={() => setFormData(prev => ({ ...prev, coverUrl: "" }))}
-                        className="absolute top-1.5 right-1.5 p-1.5 bg-black/60 hover:bg-red-500/80 text-white rounded-lg transition-colors z-20 backdrop-blur-md"
-                        title="Supprimer la couverture"
-                      >
-                        <Trash2 size={12} />
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center justify-center gap-1.5 text-zinc-500 text-center p-3 h-full">
-                      <UploadCloud size={24} className="text-zinc-400" />
-                      <span className="text-[10px]">Importer</span>
-                    </div>
-                  )}
-
-                  {/* Upload overlay */}
-                  <label className="absolute inset-0 bg-black/60 opacity-0 group-hover/cover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1 cursor-pointer z-10">
-                    <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e, 'coverUrl')} className="absolute inset-0 opacity-0 cursor-pointer" />
-                    <UploadCloud size={20} className="text-white" />
-                    <span className="text-[10px] text-white font-medium">Modifier</span>
-                  </label>
-                </div>
-                
-                {/* Fallback URL input (compact) */}
-                <input 
-                  type="text" 
-                  name="coverUrl" 
-                  value={formData.coverUrl} 
-                  onChange={handleChange} 
-                  placeholder="Lien couverture" 
-                  className="w-full bg-white/[0.02] border border-white/10 hover:border-white/20 rounded-xl px-3 py-1.5 text-[10px] text-zinc-300 focus:outline-none focus:border-white/30 transition-all" 
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-[11px] font-medium text-zinc-400 mb-1.5 mx-1">{t('role') || "Poste"}</label>
-                <input type="text" name="role" value={formData.role} onChange={handleChange} className="w-full bg-white/[0.03] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-white/30 focus:bg-white/[0.06] transition-all" />
-              </div>
-              <div>
-                <label className="block text-[11px] font-medium text-zinc-400 mb-1.5 mx-1">{t('company') || "Entreprise"}</label>
-                <input type="text" name="company" value={formData.company} onChange={handleChange} className="w-full bg-white/[0.03] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-white/30 focus:bg-white/[0.06] transition-all" />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-[11px] font-medium text-zinc-400 mb-1.5 mx-1">{t('bio') || "Biographie"}</label>
-              <textarea name="bio" value={formData.bio} onChange={handleChange} rows={3} className="w-full bg-white/[0.03] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-white/30 focus:bg-white/[0.06] transition-all resize-none" />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-[11px] font-medium text-zinc-400 mb-1.5 ml-1">Email</label>
-                <input type="email" name="email" value={formData.email} onChange={handleChange} className="w-full bg-white/[0.03] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-white/30 focus:bg-white/[0.06] transition-all" />
-              </div>
-              <div>
-                <label className="block text-[11px] font-medium text-zinc-400 mb-1.5 ml-1">Téléphone</label>
-                <input type="tel" name="phone" value={formData.phone} onChange={handleChange} className="w-full bg-white/[0.03] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-white/30 focus:bg-white/[0.06] transition-all" />
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-[11px] font-medium text-zinc-400 mb-1.5 ml-1">Site Web</label>
-                <input type="url" name="website" value={formData.website} onChange={handleChange} className="w-full bg-white/[0.03] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-white/30 focus:bg-white/[0.06] transition-all" />
-              </div>
-              <div>
-                <label className="block text-[11px] font-medium text-zinc-400 mb-1.5 ml-1">Adresse</label>
-                <input type="text" name="location" value={formData.location} onChange={handleChange} className="w-full bg-white/[0.03] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-white/30 focus:bg-white/[0.06] transition-all" />
-              </div>
-            </div>
-          </section>
-
-          <section className="space-y-6 pt-8 border-t border-white/10">
-            <div className="flex items-center justify-between">
-              <h2 className="text-[11px] font-bold uppercase tracking-widest text-zinc-500 flex items-center gap-2">
-                <LinkIcon size={14} /> Réseaux & Liens
-              </h2>
-              <button onClick={addSocialLink} className="flex items-center gap-1 text-[10px] font-bold bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg transition-colors">
-                <Plus size={12} /> {t("add") || "Ajouter"}
-              </button>
-            </div>
-            <div className="space-y-3">
-              {formData.socialLinks.map((link) => (
-                <div key={link.id} className="flex gap-2 items-center bg-white/[0.02] border border-white/5 p-2 rounded-xl">
-                  <input type="text" placeholder="Nom/Icone" value={link.platform} onChange={(e) => updateSocialLink(link.id, "platform", e.target.value)} className="w-1/3 bg-transparent px-2 py-2 text-sm text-white focus:outline-none" />
-                  <div className="w-[1px] h-6 bg-white/10 mx-1" />
-                  <input type="text" placeholder="URL ou Texte" value={link.url} onChange={(e) => updateSocialLink(link.id, "url", e.target.value)} className="flex-1 bg-transparent px-2 py-2 text-sm text-white focus:outline-none" />
-                  <button onClick={() => removeSocialLink(link.id)} className="p-2 text-zinc-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors">
-                    <Trash2 size={14} />
-                  </button>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          {formData.layout === 'agenda-jour' && (
-            <section className="space-y-6 pt-8 border-t border-white/10">
-              <div className="flex items-center justify-between">
-                <h2 className="text-[11px] font-bold uppercase tracking-widest text-zinc-500 flex items-center gap-2">
-                  <Calendar size={14} /> Programme Journée
-                </h2>
-                <button onClick={addScheduleItem} className="flex items-center gap-1 text-[10px] font-bold bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg transition-colors">
-                  <Plus size={12} /> {t("add") || "Ajouter"}
-                </button>
-              </div>
-              <div className="space-y-3">
-                {formData.scheduleData.map((item) => (
-                  <div key={item.id} className="flex gap-2 items-center bg-white/[0.02] border border-white/5 p-2 rounded-xl">
-                    <input type="text" placeholder="Heure" value={item.time} onChange={(e) => updateScheduleItem(item.id, "time", e.target.value)} className="w-1/4 bg-transparent px-2 py-2 text-sm text-white focus:outline-none" />
-                    <div className="w-[1px] h-6 bg-white/10 mx-1" />
-                    <input type="text" placeholder="Tâche" value={item.task} onChange={(e) => updateScheduleItem(item.id, "task", e.target.value)} className="flex-1 bg-transparent px-2 py-2 text-sm text-white focus:outline-none" />
-                    <button onClick={() => removeScheduleItem(item.id)} className="p-2 text-zinc-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors">
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </section>
-          )}
-
-          {formData.layout === 'agenda-semaine' && (
-            <section className="space-y-6 pt-8 border-t border-white/10">
-              <div className="flex items-center justify-between">
-                <h2 className="text-[11px] font-bold uppercase tracking-widest text-zinc-500 flex items-center gap-2">
-                  <Calendar size={14} /> Événements
-                </h2>
-                <button onClick={addEventItem} className="flex items-center gap-1 text-[10px] font-bold bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg transition-colors">
-                  <Plus size={12} /> {t("add") || "Ajouter"}
-                </button>
-              </div>
-              <div className="space-y-4">
-                {formData.eventData.map((item) => (
-                  <div key={item.id} className="space-y-2 bg-white/[0.02] p-4 rounded-xl border border-white/10">
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="text-xs font-semibold text-zinc-400">Événement</span>
-                      <button onClick={() => removeEventItem(item.id)} className="p-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-lg transition-colors">
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      <input type="text" placeholder="Jour (ex: JEU.)" value={item.day} onChange={(e) => updateEventItem(item.id, "day", e.target.value)} className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none" />
-                      <input type="text" placeholder="Date (ex: 05)" value={item.date} onChange={(e) => updateEventItem(item.id, "date", e.target.value)} className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none" />
-                    </div>
-                    <input type="text" placeholder="Titre" value={item.title} onChange={(e) => updateEventItem(item.id, "title", e.target.value)} className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none" />
-                    <div className="grid grid-cols-2 gap-2">
-                      <input type="text" placeholder="Lieu" value={item.location} onChange={(e) => updateEventItem(item.id, "location", e.target.value)} className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none" />
-                      <input type="text" placeholder="Heure" value={item.time} onChange={(e) => updateEventItem(item.id, "time", e.target.value)} className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none" />
-                    </div>
-                    <textarea placeholder="Description" value={item.desc} onChange={(e) => updateEventItem(item.id, "desc", e.target.value)} rows={2} className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none resize-none" />
-                  </div>
-                ))}
-              </div>
-            </section>
-          )}
-
-        </div>
-      </motion.div>
-
-      {/* RIGHT PANEL - Preview */}
-      <div className={`flex-1 h-full bg-[#111] md:bg-[#0a0a0a] relative overflow-hidden flex flex-col items-center justify-center ${activeTab === "preview" ? "flex" : "hidden md:flex"}`}>
-        
-        {/* Background ambient lighting */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] opacity-20 blur-[100px] rounded-full transition-all duration-700" style={{ background: formData.theme.bg }} />
-        </div>
-
-        {/* Floating Tooltip Desktop */}
-        <div className="hidden md:flex absolute top-6 right-6 items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-full backdrop-blur-md text-xs font-semibold text-zinc-400 shadow-2xl">
-          <Smartphone size={14} />
-          {t("live_preview") || "Aperçu en direct"}
-        </div>
-
-        {/* Mobile Device Frame Desktop */}
-        <div className="relative w-full h-full md:h-[85vh] md:w-[390px] md:rounded-[45px] md:border-[8px] border-[#222] bg-[#050505] shadow-2xl overflow-hidden shadow-black/50 ring-1 ring-white/5 flex flex-col">
-          
-          {/* iOS Notch Mockup */}
-          <div className="hidden md:block absolute top-0 inset-x-0 h-6 z-50 pointer-events-none">
-            <div className="w-[120px] h-6 bg-[#222] mx-auto rounded-b-2xl relative">
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-4 bg-black rounded-full" />
-            </div>
-          </div>
-
-          <div className="flex-1 overflow-y-auto w-full h-full [&::-webkit-scrollbar]:hidden relative bg-[#050505]">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={formData.layout + formData.mode + formData.theme.id}
-                initial={{ opacity: 0, scale: 0.98 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.98 }}
-                transition={{ duration: 0.3 }}
-                className={`w-full min-h-full ${formData.mode === 'light' ? 'bg-white text-black' : ''}`}
-              >
-                {renderTemplatePreview()}
-              </motion.div>
-            </AnimatePresence>
-          </div>
+        <div className="flex-1 overflow-y-auto p-8 space-y-12 [&::-webkit-scrollbar]:hidden pb-12">
+          <SectionDesign />
+          <div className="w-full h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+          <SectionProfile />
+          <div className="w-full h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+          <SectionLinks />
         </div>
       </div>
     </div>

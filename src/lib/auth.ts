@@ -35,11 +35,32 @@ export function useAuth() {
   }, []);
 
   const fetchProfile = async (userId: string) => {
-    const { data } = await supabase
+    let { data } = await supabase
       .from('profiles')
       .select('*')
       .eq('id', userId)
-      .single();
+      .maybeSingle();
+      
+    // Si le profil n'existe pas (ex: erreur de trigger lors de l'inscription)
+    if (!data) {
+      const { data: userData } = await supabase.auth.getUser();
+      if (userData?.user) {
+        // Tente de créer le profil manuellement
+        const { data: newProfile } = await supabase
+          .from('profiles')
+          .insert([
+            {
+              id: userId,
+              username: 'user_' + userId.substring(0, 8),
+              display_name: userData.user.email?.split('@')[0] || 'Utilisateur',
+            }
+          ])
+          .select()
+          .maybeSingle();
+        data = newProfile;
+      }
+    }
+
     setProfile(data);
     setLoading(false);
   };

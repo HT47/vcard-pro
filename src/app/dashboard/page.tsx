@@ -27,6 +27,10 @@ export default function Dashboard() {
   const [loadingCards, setLoadingCards] = useState(true);
   const [copied, setCopied] = useState(false);
   const [showQR, setShowQR] = useState(false);
+  const [editingVcard, setEditingVcard] = useState<VCard | null>(null);
+  const [tempSlug, setTempSlug] = useState("");
+  const [savingSlug, setSavingSlug] = useState(false);
+  const [vcardCopied, setVcardCopied] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -68,6 +72,50 @@ export default function Dashboard() {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const getVcardDomainUrl = (slug: string) => {
+    const isProd = process.env.NODE_ENV === 'production';
+    const mainDomain = isProd ? 'hosyardigital.com' : 'localhost:3000';
+    const protocol = isProd ? 'https://' : 'http://';
+    return `${protocol}${slug}.${mainDomain}`;
+  };
+
+  const saveVcardSlug = async () => {
+    if (!editingVcard || !tempSlug || tempSlug === editingVcard.slug) return;
+    setSavingSlug(true);
+    
+    // Check if slug is taken by someone else
+    const { data: existing } = await supabase
+      .from("vcards")
+      .select("id")
+      .eq("slug", tempSlug)
+      .single();
+
+    if (existing && existing.id !== editingVcard.id) {
+      alert(t("slug_already_taken") || "Ce nom est déjà pris, veuillez en choisir un autre.");
+      setSavingSlug(false);
+      return;
+    }
+
+    const { error } = await supabase
+      .from("vcards")
+      .update({ slug: tempSlug })
+      .eq("id", editingVcard.id);
+
+    if (error) {
+      alert("Erreur lors de la sauvegarde.");
+    } else {
+      setVcards(prev => prev.map(v => v.id === editingVcard.id ? { ...v, slug: tempSlug } : v));
+      setEditingVcard(prev => prev ? { ...prev, slug: tempSlug } : null);
+    }
+    setSavingSlug(false);
+  };
+
+  const copyVcardUrl = (url: string) => {
+    navigator.clipboard.writeText(url);
+    setVcardCopied(true);
+    setTimeout(() => setVcardCopied(false), 2000);
+  };
+
   if (loading) {
     return (
       <div className="flex h-screen items-center justify-center bg-[#050505]">
@@ -76,7 +124,26 @@ export default function Dashboard() {
     );
   }
 
-  if (!user || !profile) return null;
+  if (!user) return null;
+
+  if (!profile) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-[#050505] p-6 text-center">
+        <div className="max-w-md w-full bg-white/5 border border-white/10 rounded-2xl p-8 backdrop-blur-xl">
+          <h2 className="text-xl font-bold text-white mb-2">Profil introuvable</h2>
+          <p className="text-zinc-400 text-sm mb-6">
+            Votre compte existe, mais impossible de charger votre profil. Cela arrive souvent si vos règles de sécurité Supabase (RLS) bloquent la lecture de la table `profiles`, ou si le profil n'a pas été créé lors de l'inscription.
+          </p>
+          <button 
+            onClick={signOut}
+            className="w-full py-3 bg-white text-black rounded-xl font-bold text-sm hover:bg-zinc-200 transition-colors"
+          >
+            Se déconnecter
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#050505] text-white" dir={isRTL ? "rtl" : "ltr"}>
@@ -256,6 +323,16 @@ export default function Dashboard() {
                         {t("primary") || "Principale"}
                       </button>
                     )}
+                    <button
+                      onClick={() => {
+                        setEditingVcard(vcard);
+                        setTempSlug(vcard.slug);
+                      }}
+                      className="p-2 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 rounded-xl transition-colors text-blue-400"
+                      title={t("publish_share") || "Publier & Partager (Sous-domaine)"}
+                    >
+                      <Share2 size={16} />
+                    </button>
                     <a
                       href={`/v/${vcard.slug}`}
                       target="_blank"
@@ -310,6 +387,86 @@ export default function Dashboard() {
                 </button>
               </div>
               <button onClick={() => setShowQR(false)} className="text-zinc-500 text-sm hover:text-white transition-colors">{t("close") || "Fermer"}</button>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* VCard Publish / Share Modal */}
+      <AnimatePresence>
+        {editingVcard && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              onClick={() => setEditingVcard(null)}
+              className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }}
+              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-[#111] border border-white/10 rounded-3xl p-8 z-[60] flex flex-col items-center gap-6 shadow-2xl w-full max-w-md"
+            >
+              <div className="w-full text-center">
+                <h3 className="text-xl font-bold">{t("publish_your_vcard") || "Publier votre vCard"}</h3>
+                <p className="text-zinc-400 text-sm mt-1">{t("choose_subdomain") || "Choisissez votre sous-domaine personnalisé"}</p>
+              </div>
+
+              {/* Subdomain Input */}
+              <div className="w-full">
+                <label className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2 block">
+                  {t("subdomain_name") || "Nom du sous-domaine"}
+                </label>
+                <div className="flex items-center bg-black border border-white/10 rounded-xl overflow-hidden focus-within:border-blue-500/50 transition-colors">
+                  <span className="pl-4 py-3 text-zinc-500 text-sm select-none">https://</span>
+                  <input
+                    type="text"
+                    value={tempSlug}
+                    onChange={(e) => setTempSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
+                    className="w-full bg-transparent border-none py-3 px-1 text-white text-sm font-bold focus:outline-none focus:ring-0"
+                    placeholder="mon-nom"
+                  />
+                  <span className="pr-4 py-3 text-zinc-500 text-sm select-none">
+                    .{process.env.NODE_ENV === 'production' ? 'hosyardigital.com' : 'localhost:3000'}
+                  </span>
+                </div>
+                <button
+                  onClick={saveVcardSlug}
+                  disabled={savingSlug || tempSlug === editingVcard.slug}
+                  className="w-full mt-3 py-3 bg-white/10 hover:bg-white/20 disabled:opacity-50 disabled:hover:bg-white/10 rounded-xl font-bold text-sm transition-colors"
+                >
+                  {savingSlug ? (t("saving") || "Enregistrement...") : (t("save_domain") || "Enregistrer le domaine")}
+                </button>
+              </div>
+
+              {/* QR & Share Section */}
+              <div className="w-full pt-6 border-t border-white/10 flex flex-col items-center gap-4">
+                <div className="p-4 bg-white rounded-2xl shadow-xl">
+                  <QRCodeSVG value={getVcardDomainUrl(editingVcard.slug)} size={150} fgColor="#000" bgColor="#fff" level="Q" />
+                </div>
+                
+                <div className="w-full">
+                  <p className="text-xs text-center text-emerald-400 font-mono bg-emerald-400/10 py-2 rounded-lg border border-emerald-400/20 mb-3 truncate px-2">
+                    {getVcardDomainUrl(editingVcard.slug)}
+                  </p>
+                  
+                  <div className="flex gap-2 w-full">
+                    <button onClick={() => copyVcardUrl(getVcardDomainUrl(editingVcard.slug))} className="flex-1 py-3 bg-white/10 hover:bg-white/20 rounded-xl font-bold text-sm transition-colors flex items-center justify-center gap-2">
+                      {vcardCopied ? <CheckCircle2 size={16} className="text-emerald-400" /> : <Copy size={16} />}
+                      {vcardCopied ? (t("copied") || "Copié !") : (t("copy") || "Copier")}
+                    </button>
+                    <button
+                      onClick={() => navigator.share?.({ title: editingVcard.data?.name || "Ma vCard", url: getVcardDomainUrl(editingVcard.slug) })}
+                      className="flex-1 py-3 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl font-bold text-sm transition-all hover:opacity-90 flex items-center justify-center gap-2"
+                    >
+                      <Share2 size={16} />
+                      {t("share") || "Partager"}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <button onClick={() => setEditingVcard(null)} className="text-zinc-500 text-sm hover:text-white transition-colors absolute top-6 right-6">
+                ✕
+              </button>
             </motion.div>
           </>
         )}
