@@ -36,28 +36,46 @@ export default function PublishedVCard() {
   const [error, setError] = useState(false);
 
   useEffect(() => {
+    let isMounted = true;
+    const timeout = setTimeout(() => {
+      if (isMounted) setLoading(false);
+    }, 4000);
+
     const fetchVCard = async () => {
       const slug = params?.slug as string;
-      if (!slug) return;
-
-      const { data: vcardData, error: vcardError } = await supabase
-        .from("vcards")
-        .select("data")
-        .eq("slug", slug)
-        .single();
-
-      if (vcardError || !vcardData) {
-        setError(true);
-      } else {
-        setData(vcardData.data);
+      if (!slug) {
+        if (isMounted) setLoading(false);
+        return;
       }
-      setLoading(false);
+
+      try {
+        const { data: vcardData, error: vcardError } = await supabase
+          .from("vcards")
+          .select("data")
+          .eq("slug", slug)
+          .single();
+
+        if (!isMounted) return;
+
+        if (vcardError || !vcardData) {
+          setError(true);
+        } else {
+          setData(vcardData.data);
+        }
+      } catch (err) {
+        console.error("fetchVCard error:", err);
+        if (isMounted) setError(true);
+      } finally {
+        if (isMounted) setLoading(false);
+      }
     };
 
-    const isClient = typeof window !== 'undefined';
-    if (isClient) {
-      fetchVCard();
-    }
+    fetchVCard();
+
+    return () => {
+      isMounted = false;
+      clearTimeout(timeout);
+    };
   }, [params]);
 
   const handleDownloadVCF = () => {

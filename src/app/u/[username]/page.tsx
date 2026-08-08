@@ -67,41 +67,68 @@ export default function PublicProfilePage() {
   const [showQR, setShowQR] = useState(false);
 
   useEffect(() => {
-    if (!username) return;
+    let isMounted = true;
+    const timeout = setTimeout(() => {
+      if (isMounted) setLoading(false);
+    }, 4000);
+
+    const fetchProfile = async () => {
+      if (!username) {
+        if (isMounted) setLoading(false);
+        return;
+      }
+
+      try {
+        const { data: profileData, error: profileError } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("username", username.toLowerCase())
+          .single();
+
+        if (!isMounted) return;
+
+        if (profileError || !profileData) {
+          setError(true);
+          return;
+        }
+        setProfile(profileData);
+
+        const { data: vcardRow, error: vcardError } = await supabase
+          .from("vcards")
+          .select("data")
+          .eq("user_id", profileData.id)
+          .eq("is_primary", true)
+          .single();
+
+        if (!isMounted) return;
+
+        if (!vcardError && vcardRow) {
+          setVcardData(vcardRow.data as VCardData);
+        } else {
+          const { data: latestCard } = await supabase
+            .from("vcards")
+            .select("data")
+            .eq("user_id", profileData.id)
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .single();
+          if (isMounted && latestCard) setVcardData(latestCard.data as VCardData);
+        }
+      } catch (err) {
+        console.error("fetchProfile error:", err);
+        if (isMounted) setError(true);
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+
     fetchProfile();
+
+    return () => {
+      isMounted = false;
+      clearTimeout(timeout);
+    };
   }, [username]);
-
-  const fetchProfile = async () => {
-    const { data: profileData, error: profileError } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("username", username.toLowerCase())
-      .single();
-
-    if (profileError || !profileData) { setError(true); setLoading(false); return; }
-    setProfile(profileData);
-
-    const { data: vcardRow, error: vcardError } = await supabase
-      .from("vcards")
-      .select("data")
-      .eq("user_id", profileData.id)
-      .eq("is_primary", true)
-      .single();
-
-    if (!vcardError && vcardRow) {
-      setVcardData(vcardRow.data as VCardData);
-    } else {
-      const { data: latestCard } = await supabase
-        .from("vcards")
-        .select("data")
-        .eq("user_id", profileData.id)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .single();
-      if (latestCard) setVcardData(latestCard.data as VCardData);
-    }
-    setLoading(false);
-  };
 
   const handleDownloadVCF = () => {
     const data = vcardData;

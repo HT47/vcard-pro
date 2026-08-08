@@ -17,52 +17,82 @@ export function useAuth() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) fetchProfile(session.user.id);
-      else setLoading(false);
-    });
+    let isMounted = true;
+
+    // Timeout guard so loading state never gets stuck
+    const timeout = setTimeout(() => {
+      if (isMounted) setLoading(false);
+    }, 4000);
+
+    supabase.auth.getSession()
+      .then(({ data: { session } }) => {
+        if (!isMounted) return;
+        setSession(session);
+        setUser(session?.user ?? null);
+        if (session?.user) {
+          fetchProfile(session.user.id);
+        } else {
+          setLoading(false);
+        }
+      })
+      .catch((err) => {
+        console.error("Auth getSession error:", err);
+        if (isMounted) setLoading(false);
+      });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!isMounted) return;
       setSession(session);
       setUser(session?.user ?? null);
-      if (session?.user) fetchProfile(session.user.id);
-      else { setProfile(null); setLoading(false); }
+      if (session?.user) {
+        fetchProfile(session.user.id);
+      } else {
+        setProfile(null);
+        setLoading(false);
+      }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      isMounted = false;
+      clearTimeout(timeout);
+      subscription.unsubscribe();
+    };
   }, []);
 
   const fetchProfile = async (userId: string) => {
-    let { data } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .maybeSingle();
-      
-    // Si le profil n'existe pas (ex: erreur de trigger lors de l'inscription)
-    if (!data) {
-      const { data: userData } = await supabase.auth.getUser();
-      if (userData?.user) {
-        // Tente de créer le profil manuellement
-        const { data: newProfile } = await supabase
-          .from('profiles')
-          .insert([
-            {
-              id: userId,
-              username: 'user_' + userId.substring(0, 8),
-              display_name: userData.user.email?.split('@')[0] || 'Utilisateur',
-            }
-          ])
-          .select()
-          .maybeSingle();
-        data = newProfile;
+    try {
+      let { data } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .maybeSingle();
+        
+      // Si le profil n'existe pas (ex: erreur de trigger lors de l'inscription)
+      if (!data) {
+        const { data: userData } = await supabase.auth.getUser();
+        if (userData?.user) {
+          // Tente de créer le profil manuellement
+          const { data: newProfile } = await supabase
+            .from('profiles')
+            .insert([
+              {
+                id: userId,
+                username: 'user_' + userId.substring(0, 8),
+                display_name: userData.user.email?.split('@')[0] || 'Utilisateur',
+              }
+            ])
+            .select()
+            .maybeSingle();
+          data = newProfile;
+        }
       }
-    }
 
-    setProfile(data);
-    setLoading(false);
+      setProfile(data);
+    } catch (err) {
+      console.error("fetchProfile error:", err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const signOut = () => supabase.auth.signOut();

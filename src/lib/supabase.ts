@@ -1,11 +1,10 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+const defaultUrl = 'https://ygkmsxgyyxbyqgfdpier.supabase.co';
+const defaultAnonKey = 'sb_publishable_Ths6fYf6cIl0S-OK7aagBw_nqO8HiN_';
 
-// Fallback values during build time if environment variables are missing on the build server
-const isConfigured = supabaseUrl && supabaseAnonKey;
-const url = isConfigured ? supabaseUrl : 'https://placeholder-url.supabase.co';
-const key = isConfigured ? supabaseAnonKey : 'placeholder-key';
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || defaultUrl;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || defaultAnonKey;
 
-export const supabase = createClient(url, key);
+export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+

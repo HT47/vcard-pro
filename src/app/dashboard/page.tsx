@@ -118,28 +118,59 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-[#050505]">
-        <div className="w-8 h-8 border-4 border-white/10 border-t-blue-500 rounded-full animate-spin" />
+      <div className="flex h-screen items-center justify-center bg-[#050505] text-white">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-10 h-10 border-4 border-white/10 border-t-blue-500 rounded-full animate-spin" />
+          <p className="text-xs text-zinc-500 font-mono tracking-wider uppercase">{t("loading") || "Chargement..."}</p>
+        </div>
       </div>
     );
   }
 
-  if (!user) return null;
+  if (!user) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-[#050505] text-white p-6">
+        <div className="max-w-sm w-full bg-white/5 border border-white/10 rounded-3xl p-8 backdrop-blur-xl text-center space-y-4">
+          <div className="w-12 h-12 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center mx-auto text-blue-400">
+            <User size={24} />
+          </div>
+          <h2 className="text-lg font-bold">{t("login_title") || "Connexion requise"}</h2>
+          <p className="text-zinc-400 text-xs leading-relaxed">
+            {t("redirecting_login") || "Veuillez vous connecter pour accéder à votre tableau de bord."}
+          </p>
+          <Link
+            href="/login"
+            className="block w-full py-3 bg-white text-black rounded-xl font-bold text-xs hover:bg-zinc-200 transition-colors"
+          >
+            {t("login_button") || "Se connecter"}
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   if (!profile) {
     return (
       <div className="flex h-screen items-center justify-center bg-[#050505] p-6 text-center">
         <div className="max-w-md w-full bg-white/5 border border-white/10 rounded-2xl p-8 backdrop-blur-xl">
-          <h2 className="text-xl font-bold text-white mb-2">Profil introuvable</h2>
+          <h2 className="text-xl font-bold text-white mb-2">{t("profile_not_found") || "Profil introuvable"}</h2>
           <p className="text-zinc-400 text-sm mb-6">
-            Votre compte existe, mais impossible de charger votre profil. Cela arrive souvent si vos règles de sécurité Supabase (RLS) bloquent la lecture de la table `profiles`, ou si le profil n'a pas été créé lors de l'inscription.
+            Votre compte existe, mais impossible de charger votre profil.
           </p>
-          <button 
-            onClick={signOut}
-            className="w-full py-3 bg-white text-black rounded-xl font-bold text-sm hover:bg-zinc-200 transition-colors"
-          >
-            Se déconnecter
-          </button>
+          <div className="flex gap-3">
+            <Link
+              href="/demo"
+              className="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold text-sm hover:bg-blue-700 transition-colors"
+            >
+              {t("create_my_vcard") || "Créer ma vCard"}
+            </Link>
+            <button 
+              onClick={signOut}
+              className="flex-1 py-3 bg-white/10 text-white rounded-xl font-bold text-sm hover:bg-white/20 transition-colors"
+            >
+              {t("logout") || "Se déconnecter"}
+            </button>
+          </div>
         </div>
       </div>
     );
